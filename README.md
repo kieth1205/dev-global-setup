@@ -3,6 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 [![GitHub issues](https://img.shields.io/github/issues/kieth1205/dev-global-setup)](https://github.com/kieth1205/dev-global-setup/issues)
+[![Tests](https://github.com/kieth1205/dev-global-setup/actions/workflows/tests.yml/badge.svg)](https://github.com/kieth1205/dev-global-setup/actions/workflows/tests.yml)
+[![Security](https://github.com/kieth1205/dev-global-setup/actions/workflows/security.yml/badge.svg)](https://github.com/kieth1205/dev-global-setup/actions/workflows/security.yml)
 
 [Tiếng Việt](#tiếng-việt) | [English](#english)
 
@@ -42,122 +44,98 @@ Dự án này cung cấp một cách đơn giản để thiết lập môi trư�
 - Lựa chọn công cụ toàn diện
 - Theo dõi tiến trình và cập nhật trạng thái
 - Xử lý lỗi và kiểm tra tính hợp lệ
+- Hỗ trợ backup và restore
+- Kiểm tra bảo mật
+- Hệ thống logging chi tiết
+- Unit tests và integration tests
 
 ## Cài đặt
 
 ### Yêu cầu
 
 - Git
-- Truy cập Shell (Bash, Zsh hoặc PowerShell)
-- Quyền quản trị (để cài đặt gói)
+- Bash shell
+- Quyền sudo/administrator
 
-### Bắt đầu nhanh
-
-1. Sao chép kho lưu trữ:
+### Cài đặt
 
 ```bash
+# Clone repository
 git clone https://github.com/kieth1205/dev-global-setup.git
 cd dev-global-setup
-```
 
-2. Tạo quyền thực thi cho script:
-
-```bash
-chmod +x global_setup_dev.sh
-```
-
-3. Chạy script thiết lập:
-
-```bash
+# Chạy script cài đặt
 ./global_setup_dev.sh
 ```
 
-## Thiết lập theo Hệ điều hành
-
-Để quá trình thiết lập đơn giản hơn, bạn có thể sử dụng các script dành riêng cho từng hệ điều hành:
-
-### macOS
-
-```bash
-curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/macos_setup.sh | bash
-```
-
-### Linux
-
-```bash
-curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/linux_setup.sh | bash
-```
-
-### Windows
-
-```bash
-curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/windows_setup.sh | bash
-```
-
 ## Cách sử dụng
-
-Script sẽ hướng dẫn bạn qua các bước sau:
 
 1. Chọn ngôn ngữ (Tiếng Anh/Tiếng Việt)
 2. Chọn hệ điều hành
 3. Chọn loại phát triển
 4. Chọn ngôn ngữ lập trình
-5. Chọn công cụ
+5. Chọn công cụ phát triển
+6. Theo dõi tiến trình cài đặt
 
-Mỗi bước đều có hướng dẫn chi tiết và chỉ báo tiến trình.
+## Thiết lập theo Hệ điều hành
+
+### macOS
+
+```bash
+./macos_setup.sh
+```
+
+### Linux
+
+```bash
+./linux_setup.sh
+```
+
+### Windows
+
+```bash
+./windows_setup.sh
+```
 
 ## Khắc phục sự cố
 
-### Các vấn đề thường gặp
+### Kiểm tra logs
 
-1. **Lỗi Quyền truy cập bị từ chối**
+```bash
+cat ~/.config/dev-setup/logs/setup_*.log
+```
 
-   - Giải pháp: Chạy script với sudo hoặc đảm bảo quyền truy cập file phù hợp
+### Backup và Restore
 
-   ```bash
-   sudo chmod +x global_setup_dev.sh
-   ```
+```bash
+# Tạo backup
+./scripts/backup.sh
 
-2. **Vấn đề cài đặt Node.js**
+# Restore từ backup
+./scripts/restore.sh <backup_file>
+```
 
-   - macOS: Sử dụng Homebrew để cài đặt Node.js
-   - Linux: Sử dụng kho lưu trữ NodeSource chính thức
-   - Windows: Sử dụng Chocolatey hoặc trình cài đặt chính thức
+### Kiểm tra bảo mật
 
-3. **Biến môi trường Java**
-
-   - Đảm bảo JAVA_HOME được thiết lập đúng
-   - Thêm thư mục bin của Java vào PATH
-   - Khởi động lại terminal sau khi cài đặt
-
-4. **Xung đột Trình quản lý gói**
-   - Sử dụng trình quản lý gói được khuyến nghị cho hệ điều hành của bạn
-   - Tránh trộn lẫn các trình quản lý gói khi có thể
-   - Xóa bộ nhớ cache của trình quản lý gói nếu cần
-
-### Hỗ trợ
-
-- Kiểm tra [FAQ](docs/FAQ.md) cho các câu hỏi thường gặp
-- Tham gia [cộng đồng Discord](https://discord.gg/your-community) của chúng tôi
-- Tìm kiếm các vấn đề hiện có trước khi tạo mới
+```bash
+./scripts/security_check.sh
+```
 
 ## Đóng góp
 
-1. Fork kho lưu trữ
-2. Tạo nhánh tính năng của bạn (`git checkout -b feature/TínhNăngTuyệtVời`)
-3. Commit các thay đổi của bạn (`git commit -m 'Thêm một Tính năng Tuyệt vời'`)
-4. Đẩy lên nhánh (`git push origin feature/TínhNăngTuyệtVời`)
-5. Mở một Pull Request
-
-Xem [CONTRIBUTING.md](CONTRIBUTING.md) để biết hướng dẫn chi tiết.
+1. Fork repository
+2. Tạo branch mới (`git checkout -b feature/amazing-feature`)
+3. Commit changes (`git commit -m 'Add some amazing feature'`)
+4. Push to branch (`git push origin feature/amazing-feature`)
+5. Mở Pull Request
 
 ## Báo cáo lỗi
 
-Vui lòng sử dụng [mẫu báo cáo lỗi](.github/ISSUE_TEMPLATE/bug_report.md) khi báo cáo vấn đề.
+Vui lòng sử dụng [GitHub Issues](https://github.com/kieth1205/dev-global-setup/issues) để báo cáo lỗi.
 
 ## Giấy phép
 
-Dự án này được cấp phép theo Giấy phép MIT - xem tệp [LICENSE](LICENSE) để biết chi tiết.
+Dự án này được cấp phép theo giấy phép MIT - xem file [LICENSE](LICENSE) để biết thêm chi tiết.
 
 ---
 
@@ -169,22 +147,22 @@ Dự án này được cấp phép theo Giấy phép MIT - xem tệp [LICENSE](L
 - [Features](#features)
 - [Installation](#installation)
 - [Usage](#usage)
-- [OS-Specific Setup](#os-specific-setup)
+- [OS-specific Setup](#os-specific-setup)
 - [Troubleshooting](#troubleshooting)
 - [Contributing](#contributing)
-- [Bug Reports](#bug-reports)
+- [Reporting Issues](#reporting-issues)
 - [License](#license)
 
 ## Overview
 
-This project provides a streamlined way to set up a development environment across different operating systems (macOS, Linux, and Windows). It includes support for various development types, programming languages, and tools.
+This project provides a simple way to set up a development environment on different operating systems (macOS, Linux, and Windows). It includes support for various development types, programming languages, and tools.
 
 ## Features
 
 - Multi-language support (English and Vietnamese)
 - Cross-platform compatibility (macOS, Linux, Windows)
-- Automated environment configuration
-- Support for multiple development types:
+- Automatic environment configuration
+- Support for various development types:
   - Web Development
   - Mobile Development
   - Backend Development
@@ -195,118 +173,94 @@ This project provides a streamlined way to set up a development environment acro
 - Comprehensive tool selection
 - Progress tracking and status updates
 - Error handling and validation
+- Backup and restore support
+- Security checks
+- Detailed logging system
+- Unit tests and integration tests
 
 ## Installation
 
-### Prerequisites
+### Requirements
 
 - Git
-- Shell access (Bash, Zsh, or PowerShell)
-- Administrative privileges (for package installation)
+- Bash shell
+- Sudo/administrator privileges
 
-### Quick Start
-
-1. Clone the repository:
+### Installation
 
 ```bash
+# Clone repository
 git clone https://github.com/kieth1205/dev-global-setup.git
 cd dev-global-setup
-```
 
-2. Make the script executable:
-
-```bash
-chmod +x global_setup_dev.sh
-```
-
-3. Run the setup script:
-
-```bash
+# Run installation script
 ./global_setup_dev.sh
 ```
 
-## OS-Specific Setup
+## Usage
 
-For a more streamlined setup process, you can use the OS-specific scripts:
+1. Select language (English/Vietnamese)
+2. Select operating system
+3. Select development type
+4. Select programming languages
+5. Select development tools
+6. Monitor installation progress
+
+## OS-specific Setup
 
 ### macOS
 
 ```bash
-curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/macos_setup.sh | bash
+./macos_setup.sh
 ```
 
 ### Linux
 
 ```bash
-curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/linux_setup.sh | bash
+./linux_setup.sh
 ```
 
 ### Windows
 
 ```bash
-curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/windows_setup.sh | bash
+./windows_setup.sh
 ```
-
-## Usage
-
-The script will guide you through the following steps:
-
-1. Language selection (English/Vietnamese)
-2. Operating system selection
-3. Development type selection
-4. Programming language selection
-5. Tool selection
-
-Each step includes detailed prompts and progress indicators.
 
 ## Troubleshooting
 
-### Common Issues
+### Check Logs
 
-1. **Permission Denied Error**
+```bash
+cat ~/.config/dev-setup/logs/setup_*.log
+```
 
-   - Solution: Run the script with sudo or ensure proper file permissions
+### Backup and Restore
 
-   ```bash
-   sudo chmod +x global_setup_dev.sh
-   ```
+```bash
+# Create backup
+./scripts/backup.sh
 
-2. **Node.js Installation Issues**
+# Restore from backup
+./scripts/restore.sh <backup_file>
+```
 
-   - macOS: Use Homebrew to install Node.js
-   - Linux: Use the official NodeSource repository
-   - Windows: Use Chocolatey or the official installer
+### Security Check
 
-3. **Java Environment Variables**
-
-   - Ensure JAVA_HOME is set correctly
-   - Add Java bin directory to PATH
-   - Restart terminal after installation
-
-4. **Package Manager Conflicts**
-   - Use the recommended package manager for your OS
-   - Avoid mixing package managers when possible
-   - Clear package manager caches if needed
-
-### Support
-
-- Check the [FAQ](docs/FAQ.md) for common questions
-- Join our [Discord community](https://discord.gg/your-community)
-- Search for existing issues before creating a new one
+```bash
+./scripts/security_check.sh
+```
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+## Reporting Issues
 
-## Bug Reports
-
-Please use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) when reporting issues.
+Please use [GitHub Issues](https://github.com/kieth1205/dev-global-setup/issues) to report issues.
 
 ## License
 
