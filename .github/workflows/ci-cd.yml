@@ -35,15 +35,22 @@ jobs:
         run: npm test
 
       - name: Check scripts
+        shell: bash
         run: |
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             chmod +x scripts/linux_curl.sh
             ./scripts/linux_curl.sh --test
-          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             chmod +x scripts/macos_curl.sh
             ./scripts/macos_curl.sh --test
           else
-            pwsh -Command ".\scripts\windows_irm.ps1 -Test"
+            # Windows specific commands
+            if [[ -f "scripts/windows_irm.ps1" ]]; then
+              pwsh -Command ".\scripts\windows_irm.ps1 -Test"
+            else
+              echo "Error: Windows script not found"
+              exit 1
+            fi
           fi
 
   build:
