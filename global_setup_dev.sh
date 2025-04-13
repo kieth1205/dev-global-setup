@@ -259,6 +259,16 @@ fi
 # OS-specific installations
 case $OS in
     "macos")
+        # Check for Xcode Command Line Tools first
+        if ! xcode-select -p &> /dev/null; then
+            print_warning "Xcode Command Line Tools is required for macOS development. / Xcode Command Line Tools là bắt buộc cho phát triển trên macOS."
+            print_info "Installing Xcode Command Line Tools... / Đang cài đặt Xcode Command Line Tools..."
+            xcode-select --install
+            print_warning "Please wait for Xcode Command Line Tools installation to complete, then run this script again. / Vui lòng đợi quá trình cài đặt Xcode Command Line Tools hoàn tất, sau đó chạy lại script này."
+            print_info "After installation, you may need to restart your terminal. / Sau khi cài đặt, bạn có thể cần khởi động lại terminal."
+            exit 0
+        fi
+
         # Install Homebrew
         if ! command_exists brew; then
             install_package "Homebrew" "/bin/bash -c \"\$(curl -fsSL ${HOMEBREW_INSTALL_URL})\"" 30 10
@@ -314,11 +324,6 @@ case $OS in
             echo 'export JAVA_HOME=$(/usr/libexec/java_home -v17)' >> ~/.zshrc
             echo 'export PATH=$JAVA_HOME/bin:$PATH' >> ~/.zshrc
             source ~/.zshrc
-        fi
-
-        # Install Xcode Command Line Tools
-        if ! xcode-select -p &> /dev/null; then
-            install_package "Xcode Command Line Tools" "xcode-select --install" 30 10
         fi
         ;;
 

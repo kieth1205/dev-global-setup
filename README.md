@@ -1,169 +1,14 @@
-# Global Development Environment Setup
+# Global Development Environment Setup / Thiết lập Môi trường Phát triển Toàn cầu
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
 [![GitHub issues](https://img.shields.io/github/issues/kieth1205/dev-global-setup)](https://github.com/kieth1205/dev-global-setup/issues)
 
-A comprehensive development environment setup script that supports multiple operating systems and development types.
-
-## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-- [OS-Specific Setup](#os-specific-setup)
-- [Troubleshooting](#troubleshooting)
-- [Contributing](#contributing)
-- [Bug Reports](#bug-reports)
-- [License](#license)
-
-## Overview
-
-This project provides a streamlined way to set up a development environment across different operating systems (macOS, Linux, and Windows). It includes support for various development types, programming languages, and tools.
-
-## Features
-
-- Multi-language support (English and Vietnamese)
-- Cross-platform compatibility (macOS, Linux, Windows)
-- Automated environment configuration
-- Support for multiple development types:
-  - Web Development
-  - Mobile Development
-  - Backend Development
-  - DevOps
-  - Data Science & AI
-  - Game Development
-  - Embedded Systems
-- Comprehensive tool selection
-- Progress tracking and status updates
-- Error handling and validation
-
-## Installation
-
-### Prerequisites
-
-- Git
-- Shell access (Bash, Zsh, or PowerShell)
-- Administrative privileges (for package installation)
-
-### Quick Start
-
-1. Clone the repository:
-
-```bash
-git clone https://github.com/kieth1205/dev-global-setup.git
-cd dev-global-setup
-```
-
-2. Make the script executable:
-
-```bash
-chmod +x global_setup_dev.sh
-```
-
-3. Run the setup script:
-
-```bash
-./global_setup_dev.sh
-```
-
-## OS-Specific Setup
-
-For a more streamlined setup process, you can use the OS-specific scripts:
-
-### macOS
-
-```bash
-curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/macos_setup.sh | bash
-```
-
-### Linux
-
-```bash
-curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/linux_setup.sh | bash
-```
-
-### Windows
-
-```bash
-curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/windows_setup.sh | bash
-```
-
-## Usage
-
-The script will guide you through the following steps:
-
-1. Language selection (English/Vietnamese)
-2. Operating system selection
-3. Development type selection
-4. Programming language selection
-5. Tool selection
-
-Each step includes detailed prompts and progress indicators.
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Permission Denied Error**
-
-   - Solution: Run the script with sudo or ensure proper file permissions
-
-   ```bash
-   sudo chmod +x global_setup_dev.sh
-   ```
-
-2. **Node.js Installation Issues**
-
-   - macOS: Use Homebrew to install Node.js
-   - Linux: Use the official NodeSource repository
-   - Windows: Use Chocolatey or the official installer
-
-3. **Java Environment Variables**
-
-   - Ensure JAVA_HOME is set correctly
-   - Add Java bin directory to PATH
-   - Restart terminal after installation
-
-4. **Package Manager Conflicts**
-   - Use the recommended package manager for your OS
-   - Avoid mixing package managers when possible
-   - Clear package manager caches if needed
-
-### Support
-
-- Check the [FAQ](docs/FAQ.md) for common questions
-- Join our [Discord community](https://discord.gg/your-community)
-- Search for existing issues before creating a new one
-
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
-## Bug Reports
-
-Please use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) when reporting issues.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+[Tiếng Việt](#tiếng-việt) | [English](#english)
 
 ---
 
-# Thiết lập Môi trường Phát triển Toàn cầu
-
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](http://makeapullrequest.com)
-[![GitHub issues](https://img.shields.io/github/issues/kieth1205/dev-global-setup)](https://github.com/kieth1205/dev-global-setup/issues)
-
-Một script thiết lập môi trường phát triển toàn diện hỗ trợ nhiều hệ điều hành và loại phát triển khác nhau.
+# Tiếng Việt
 
 ## Mục lục
 
@@ -313,3 +158,156 @@ Vui lòng sử dụng [mẫu báo cáo lỗi](.github/ISSUE_TEMPLATE/bug_report.
 ## Giấy phép
 
 Dự án này được cấp phép theo Giấy phép MIT - xem tệp [LICENSE](LICENSE) để biết chi tiết.
+
+---
+
+# English
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+- [OS-Specific Setup](#os-specific-setup)
+- [Troubleshooting](#troubleshooting)
+- [Contributing](#contributing)
+- [Bug Reports](#bug-reports)
+- [License](#license)
+
+## Overview
+
+This project provides a streamlined way to set up a development environment across different operating systems (macOS, Linux, and Windows). It includes support for various development types, programming languages, and tools.
+
+## Features
+
+- Multi-language support (English and Vietnamese)
+- Cross-platform compatibility (macOS, Linux, Windows)
+- Automated environment configuration
+- Support for multiple development types:
+  - Web Development
+  - Mobile Development
+  - Backend Development
+  - DevOps
+  - Data Science & AI
+  - Game Development
+  - Embedded Systems
+- Comprehensive tool selection
+- Progress tracking and status updates
+- Error handling and validation
+
+## Installation
+
+### Prerequisites
+
+- Git
+- Shell access (Bash, Zsh, or PowerShell)
+- Administrative privileges (for package installation)
+
+### Quick Start
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/kieth1205/dev-global-setup.git
+cd dev-global-setup
+```
+
+2. Make the script executable:
+
+```bash
+chmod +x global_setup_dev.sh
+```
+
+3. Run the setup script:
+
+```bash
+./global_setup_dev.sh
+```
+
+## OS-Specific Setup
+
+For a more streamlined setup process, you can use the OS-specific scripts:
+
+### macOS
+
+```bash
+curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/macos_setup.sh | bash
+```
+
+### Linux
+
+```bash
+curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/linux_setup.sh | bash
+```
+
+### Windows
+
+```bash
+curl -s https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/windows_setup.sh | bash
+```
+
+## Usage
+
+The script will guide you through the following steps:
+
+1. Language selection (English/Vietnamese)
+2. Operating system selection
+3. Development type selection
+4. Programming language selection
+5. Tool selection
+
+Each step includes detailed prompts and progress indicators.
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Permission Denied Error**
+
+   - Solution: Run the script with sudo or ensure proper file permissions
+
+   ```bash
+   sudo chmod +x global_setup_dev.sh
+   ```
+
+2. **Node.js Installation Issues**
+
+   - macOS: Use Homebrew to install Node.js
+   - Linux: Use the official NodeSource repository
+   - Windows: Use Chocolatey or the official installer
+
+3. **Java Environment Variables**
+
+   - Ensure JAVA_HOME is set correctly
+   - Add Java bin directory to PATH
+   - Restart terminal after installation
+
+4. **Package Manager Conflicts**
+   - Use the recommended package manager for your OS
+   - Avoid mixing package managers when possible
+   - Clear package manager caches if needed
+
+### Support
+
+- Check the [FAQ](docs/FAQ.md) for common questions
+- Join our [Discord community](https://discord.gg/your-community)
+- Search for existing issues before creating a new one
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
+
+## Bug Reports
+
+Please use the [bug report template](.github/ISSUE_TEMPLATE/bug_report.md) when reporting issues.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
