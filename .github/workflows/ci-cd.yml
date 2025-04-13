@@ -65,21 +65,34 @@ jobs:
         with:
           node-version: "18"
 
+      - name: Clean Build Directory
+        run: |
+          if [ -d "dist" ]; then
+            echo "Cleaning existing dist directory..."
+            rm -rf dist
+          fi
+          mkdir -p dist
+
       - name: Install dependencies
         run: npm install
 
       - name: Build
         run: |
-          # Enable verbose output
+          echo "Starting build process..."
           npm run build --verbose
-          # Check build exit code
-          if [ $? -ne 0 ]; then
-            echo "Build failed"
+          BUILD_EXIT_CODE=$?
+
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "Build failed with exit code: $BUILD_EXIT_CODE"
             exit 1
           fi
 
+          echo "Build completed successfully"
+
       - name: Verify Build Output
         run: |
+          echo "Verifying build output..."
+
           # Check if dist directory exists
           if [ ! -d "dist" ]; then
             echo "Error: Build output directory (dist/) does not exist"
@@ -96,6 +109,10 @@ jobs:
           echo "Build output contents:"
           ls -la dist/
 
+          # Check file sizes
+          echo "File sizes:"
+          du -sh dist/*
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v3
         with:
@@ -103,6 +120,7 @@ jobs:
           path: dist/
           retention-days: 5
           if-no-files-found: error
+          compression-level: 9
 
   deploy:
     needs: build
