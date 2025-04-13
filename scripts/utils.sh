@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# Source configuration
+source "$(dirname "$0")/config.sh"
+
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -154,13 +157,28 @@ check_requirements() {
     esac
     
     # Check available disk space
-    local required_space=5000 # 5GB in MB
     local available_space=$(df -m . | awk 'NR==2 {print $4}')
     
-    if [ "$available_space" -lt "$required_space" ]; then
-        print_warning "Low disk space. At least 5GB is recommended. / Dung lượng đĩa thấp. Khuyến nghị ít nhất 5GB."
+    if [ "$available_space" -lt "$MIN_DISK_SPACE" ]; then
+        print_warning "Low disk space. At least ${MIN_DISK_SPACE}MB is recommended. / Dung lượng đĩa thấp. Khuyến nghị ít nhất ${MIN_DISK_SPACE}MB."
     else
         print_success "Sufficient disk space available / Đủ dung lượng đĩa"
+    fi
+    
+    # Check memory
+    local total_memory=$(free -m | awk '/^Mem:/{print $2}')
+    if [ "$total_memory" -lt "$MIN_MEMORY" ]; then
+        print_warning "Low memory. At least ${MIN_MEMORY}MB is recommended. / Bộ nhớ thấp. Khuyến nghị ít nhất ${MIN_MEMORY}MB."
+    else
+        print_success "Sufficient memory available / Đủ bộ nhớ"
+    fi
+    
+    # Check CPU cores
+    local cpu_cores=$(nproc)
+    if [ "$cpu_cores" -lt "$MIN_CPU_CORES" ]; then
+        print_warning "Low CPU cores. At least ${MIN_CPU_CORES} cores are recommended. / Số lõi CPU thấp. Khuyến nghị ít nhất ${MIN_CPU_CORES} lõi."
+    else
+        print_success "Sufficient CPU cores available / Đủ số lõi CPU"
     fi
     
     # Check internet connection
@@ -169,6 +187,29 @@ check_requirements() {
     else
         print_error "No internet connection / Không có kết nối internet"
         exit 1
+    fi
+}
+
+# Check GitHub repository
+check_github_repo() {
+    print_section "Checking GitHub Repository / Kiểm tra kho lưu trữ GitHub"
+    
+    # Check if repository exists
+    local response=$(curl -s "${GITHUB_API_URL}/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}")
+    if [[ "$response" == *"Not Found"* ]]; then
+        print_error "Repository not found / Không tìm thấy kho lưu trữ"
+        exit 1
+    else
+        print_success "Repository found / Đã tìm thấy kho lưu trữ"
+    fi
+    
+    # Check if branch exists
+    local response=$(curl -s "${GITHUB_API_URL}/repos/${GITHUB_REPO_OWNER}/${GITHUB_REPO_NAME}/branches/${GITHUB_BRANCH}")
+    if [[ "$response" == *"Not Found"* ]]; then
+        print_error "Branch not found / Không tìm thấy nhánh"
+        exit 1
+    else
+        print_success "Branch found / Đã tìm thấy nhánh"
     fi
 }
 
@@ -183,4 +224,5 @@ export -f print_info
 export -f print_question
 export -f command_exists
 export -f install_package
-export -f check_requirements 
+export -f check_requirements
+export -f check_github_repo 

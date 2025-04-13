@@ -1,7 +1,10 @@
 #!/bin/bash
 
-# Source utility functions
+# Source utility functions and configuration
 source "$(dirname "$0")/scripts/utils.sh"
+
+# Check GitHub repository
+check_github_repo
 
 # Colors for output
 GREEN='\033[0;32m'
@@ -217,7 +220,7 @@ case $OS in
     "macos")
         # Install Homebrew
         if ! command_exists brew; then
-            install_package "Homebrew" "/bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\"" 30 10
+            install_package "Homebrew" "/bin/bash -c \"\$(curl -fsSL ${HOMEBREW_INSTALL_URL})\"" 30 10
             echo 'eval "$(/opt/homebrew/bin/brew shellenv)"' >> ~/.zshrc
             eval "$(/opt/homebrew/bin/brew shellenv)"
         fi
@@ -228,24 +231,24 @@ case $OS in
         fi
 
         if [ ! -d "$HOME/.oh-my-zsh" ]; then
-            install_package "Oh My Zsh" "sh -c \"\$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)\"" 20 8
+            install_package "Oh My Zsh" "sh -c \"\$(curl -fsSL ${OH_MY_ZSH_INSTALL_URL})\"" 20 8
         fi
 
         # Install Zsh plugins
         print_section "Installing Zsh plugins / Cài đặt plugin Zsh"
         # Install zsh-autosuggestions
         if [ ! -d "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" ]; then
-            install_package "zsh-autosuggestions" "git clone https://github.com/zsh-users/zsh-autosuggestions ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" 10 4
+            install_package "zsh-autosuggestions" "git clone ${ZSH_AUTOSUGGESTIONS_URL} ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-autosuggestions" 10 4
         fi
 
         # Install zsh-syntax-highlighting
         if [ ! -d "${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" ]; then
-            install_package "zsh-syntax-highlighting" "git clone https://github.com/zsh-users/zsh-syntax-highlighting.git ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" 10 4
+            install_package "zsh-syntax-highlighting" "git clone ${ZSH_SYNTAX_HIGHLIGHTING_URL} ${ZSH_CUSTOM:-~/.oh-my-zsh/custom}/plugins/zsh-syntax-highlighting" 10 4
         fi
 
         # Install Node.js
         if ! command_exists node; then
-            install_package "Node.js" "brew install node" 20 8
+            install_package "Node.js" "brew install node@${NODE_VERSION}" 20 8
         fi
 
         # Install pnpm
@@ -287,7 +290,7 @@ case $OS in
 
         # Install Node.js
         if ! command_exists node; then
-            install_package "Node.js" "curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash - && sudo apt-get install -y nodejs" 30 10
+            install_package "Node.js" "curl -fsSL ${NODE_INSTALL_URL} | sudo -E bash - && sudo apt-get install -y nodejs" 30 10
         fi
 
         # Install pnpm
@@ -316,7 +319,7 @@ case $OS in
     "windows")
         # Install Chocolatey (Windows package manager)
         if ! command_exists choco; then
-            install_package "Chocolatey" "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'))" 30 10
+            install_package "Chocolatey" "Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('${CHOCOLATEY_INSTALL_URL}'))" 30 10
         fi
 
         # Install Node.js
