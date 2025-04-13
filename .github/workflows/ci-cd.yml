@@ -72,6 +72,7 @@ jobs:
             rm -rf dist
           fi
           mkdir -p dist
+          echo "Created fresh dist directory"
 
       - name: Install dependencies
         run: npm install
@@ -88,6 +89,17 @@ jobs:
           fi
 
           echo "Build completed successfully"
+
+      - name: Debug Build Output
+        run: |
+          echo "Debugging build output..."
+          echo "Current working directory: $(pwd)"
+          echo "Contents of root directory:"
+          ls -la
+          echo "Contents of dist directory:"
+          ls -la dist/
+          echo "File sizes in dist:"
+          du -sh dist/* 2>/dev/null || true
 
       - name: Verify Build Output
         id: verify_build
@@ -108,18 +120,13 @@ jobs:
             exit 1
           fi
 
-          # List contents of dist directory for debugging
-          echo "Build output contents:"
-          ls -la dist/
-
-          # Check file sizes
-          echo "File sizes:"
-          du -sh dist/*
-
-          # Count files
+          # Count files and calculate total size
           FILE_COUNT=$(find dist -type f | wc -l)
-          echo "Total files in dist: $FILE_COUNT"
+          TOTAL_SIZE=$(du -sh dist | cut -f1)
 
+          echo "Build output verified successfully"
+          echo "Total files: $FILE_COUNT"
+          echo "Total size: $TOTAL_SIZE"
           echo "has_files=true" >> $GITHUB_OUTPUT
 
       - name: Upload build artifacts
