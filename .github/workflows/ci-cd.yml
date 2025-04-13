@@ -1,0 +1,134 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch: # Cho phép chạy thủ công
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: npm test
+
+      - name: Check scripts
+        run: |
+          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+            chmod +x scripts/linux_curl.sh
+            ./scripts/linux_curl.sh --test
+          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+            chmod +x scripts/macos_curl.sh
+            ./scripts/macos_curl.sh --test
+          else
+            pwsh -Command ".\scripts\windows_irm.ps1 -Test"
+          fi
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build
+          path: dist/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: build
+          path: dist/
+
+      - name: Generate Version
+        id: version
+        run: |
+          # Tạo version dựa trên thời gian (YYYY.MM.DD.HHmm)
+          VERSION=$(date +'%Y.%m.%d.%H%M')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+          # Cập nhật version trong package.json
+          npm version $VERSION --no-git-tag-version
+
+          # Commit thay đổi version
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add package.json
+          git commit -m "Bump version to $VERSION"
+          git push
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./dist
+          publish_branch: gh-pages
+
+      - name: Create Git Tag
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}'
+            const tag = `v${version}`
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${tag}`,
+              sha: context.sha
+            })
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Release v${{ steps.version.outputs.version }}
+          body: |
+            ## Changes
+            - Automated release created by GitHub Actions
+            - Version: ${{ steps.version.outputs.version }}
+            - Build: ${{ github.run_number }}
+            - Timestamp: ${{ steps.version.outputs.version }}
+          files: |
+            dist/*
+            scripts/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false
