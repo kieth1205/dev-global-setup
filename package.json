@@ -1,6 +1,6 @@
 {
   "name": "dev-global-setup",
-  "version": "1.0.0",
+  "version": "2025.4.1-3.1056-rc",
   "description": "Global development environment setup script",
   "main": "index.js",
   "scripts": {
