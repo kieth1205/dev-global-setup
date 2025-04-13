@@ -41,7 +41,8 @@ print_header
 print_section "Language Selection / Lựa chọn ngôn ngữ"
 echo "1. English"
 echo "2. Tiếng Việt"
-read -p "$(print_question "Enter your choice (1-2) / Nhập lựa chọn (1-2): ")" lang_choice
+echo "0. ${ERROR_ICON} Exit / Thoát"
+read -p "$(print_question "Enter your choice (0-2) / Nhập lựa chọn (0-2): ")" lang_choice
 
 # Set language variables
 case $lang_choice in
@@ -149,10 +150,20 @@ print_section "Operating System Selection / Lựa chọn hệ điều hành"
 echo "$OS_MACOS"
 echo "$OS_LINUX"
 echo "$OS_WINDOWS"
-read -p "$(print_question "Enter your choice (1-3) / Nhập lựa chọn (1-3): ")" os_choice
+echo "0. ${ERROR_ICON} Back / Quay lại"
+echo "9. ${ERROR_ICON} Exit / Thoát"
+read -p "$(print_question "Enter your choice (0-3,9) / Nhập lựa chọn (0-3,9): ")" os_choice
 
 # Set OS-specific variables
 case $os_choice in
+    0)
+        # Go back to language selection
+        continue
+        ;;
+    9)
+        print_info "Exiting... / Đang thoát..."
+        exit 0
+        ;;
     1)
         OS="macos"
         ;;
@@ -164,7 +175,7 @@ case $os_choice in
         ;;
     *)
         print_error "$INVALID_CHOICE"
-        exit 1
+        continue
         ;;
 esac
 
@@ -179,7 +190,17 @@ echo "$DEV_TYPE_DEVOPS"
 echo "$DEV_TYPE_DATA"
 echo "$DEV_TYPE_GAME"
 echo "$DEV_TYPE_EMBEDDED"
-read -p "$(print_question "Enter your choices (comma-separated) / Nhập lựa chọn (phân cách bằng dấu phẩy): ")" dev_type_choices
+echo "0. ${ERROR_ICON} Back / Quay lại"
+echo "9. ${ERROR_ICON} Exit / Thoát"
+read -p "$(print_question "Enter your choices (comma-separated, 0 to go back, 9 to exit) / Nhập lựa chọn (phân cách bằng dấu phẩy, 0 để quay lại, 9 để thoát): ")" dev_type_choices
+
+# Handle navigation options
+if [[ "$dev_type_choices" == "0" ]]; then
+    continue
+elif [[ "$dev_type_choices" == "9" ]]; then
+    print_info "Exiting... / Đang thoát..."
+    exit 0
+fi
 
 # Programming languages selection
 print_section "Programming Languages Selection / Lựa chọn ngôn ngữ lập trình"
@@ -198,7 +219,17 @@ echo "$LANG_ELIXIR"
 echo "$LANG_SCALA"
 echo "$LANG_HASKELL"
 echo "$LANG_CLOJURE"
-read -p "$(print_question "Enter your choices (comma-separated) / Nhập lựa chọn (phân cách bằng dấu phẩy): ")" lang_choices
+echo "0. ${ERROR_ICON} Back / Quay lại"
+echo "9. ${ERROR_ICON} Exit / Thoát"
+read -p "$(print_question "Enter your choices (comma-separated, 0 to go back, 9 to exit) / Nhập lựa chọn (phân cách bằng dấu phẩy, 0 để quay lại, 9 để thoát): ")" lang_choices
+
+# Handle navigation options
+if [[ "$lang_choices" == "0" ]]; then
+    continue
+elif [[ "$lang_choices" == "9" ]]; then
+    print_info "Exiting... / Đang thoát..."
+    exit 0
+fi
 
 # Development tools selection
 print_section "Development Tools Selection / Lựa chọn công cụ phát triển"
@@ -213,7 +244,17 @@ echo "$TOOLS_CI_CD"
 echo "$TOOLS_PROJECT"
 echo "$TOOLS_DOCS"
 echo "$TOOLS_OTHER"
-read -p "$(print_question "Enter your choices (comma-separated) / Nhập lựa chọn (phân cách bằng dấu phẩy): ")" tools_choices
+echo "0. ${ERROR_ICON} Back / Quay lại"
+echo "9. ${ERROR_ICON} Exit / Thoát"
+read -p "$(print_question "Enter your choices (comma-separated, 0 to go back, 9 to exit) / Nhập lựa chọn (phân cách bằng dấu phẩy, 0 để quay lại, 9 để thoát): ")" tools_choices
+
+# Handle navigation options
+if [[ "$tools_choices" == "0" ]]; then
+    continue
+elif [[ "$tools_choices" == "9" ]]; then
+    print_info "Exiting... / Đang thoát..."
+    exit 0
+fi
 
 # OS-specific installations
 case $OS in
@@ -345,7 +386,17 @@ echo "1. ${TOOL_ICON} VS Code"
 echo "2. ${TOOL_ICON} WebStorm"
 echo "3. ${TOOL_ICON} Android Studio"
 echo "4. ${TOOL_ICON} IntelliJ IDEA"
-read -p "$(print_question "Enter your choices (comma-separated) / Nhập lựa chọn (phân cách bằng dấu phẩy): ")" ide_choices
+echo "0. ${ERROR_ICON} Back / Quay lại"
+echo "9. ${ERROR_ICON} Exit / Thoát"
+read -p "$(print_question "Enter your choices (comma-separated, 0 to go back, 9 to exit) / Nhập lựa chọn (phân cách bằng dấu phẩy, 0 để quay lại, 9 để thoát): ")" ide_choices
+
+# Handle navigation options
+if [[ "$ide_choices" == "0" ]]; then
+    continue
+elif [[ "$ide_choices" == "9" ]]; then
+    print_info "Exiting... / Đang thoát..."
+    exit 0
+fi
 
 # Development tools selection
 print_section "Development Tools Selection / Lựa chọn công cụ phát triển"
@@ -355,7 +406,17 @@ echo "3. ${TOOL_ICON} GitKraken"
 if [[ "$OS" == "macos" ]]; then
     echo "4. ${TOOL_ICON} iTerm2"
 fi
-read -p "$(print_question "Enter your choices (comma-separated) / Nhập lựa chọn (phân cách bằng dấu phẩy): ")" dev_tool_choices
+echo "0. ${ERROR_ICON} Back / Quay lại"
+echo "9. ${ERROR_ICON} Exit / Thoát"
+read -p "$(print_question "Enter your choices (comma-separated, 0 to go back, 9 to exit) / Nhập lựa chọn (phân cách bằng dấu phẩy, 0 để quay lại, 9 để thoát): ")" dev_tool_choices
+
+# Handle navigation options
+if [[ "$dev_tool_choices" == "0" ]]; then
+    continue
+elif [[ "$dev_tool_choices" == "9" ]]; then
+    print_info "Exiting... / Đang thoát..."
+    exit 0
+fi
 
 # Web development tools selection
 print_section "Web Development Tools Selection / Lựa chọn công cụ phát triển web"
@@ -364,7 +425,17 @@ echo "2. ${DEV_ICON} Next.js"
 echo "3. ${DEV_ICON} React"
 echo "4. ${DEV_ICON} Angular"
 echo "5. ${DEV_ICON} Vue"
-read -p "$(print_question "Enter your choices (comma-separated) / Nhập lựa chọn (phân cách bằng dấu phẩy): ")" web_choices
+echo "0. ${ERROR_ICON} Back / Quay lại"
+echo "9. ${ERROR_ICON} Exit / Thoát"
+read -p "$(print_question "Enter your choices (comma-separated, 0 to go back, 9 to exit) / Nhập lựa chọn (phân cách bằng dấu phẩy, 0 để quay lại, 9 để thoát): ")" web_choices
+
+# Handle navigation options
+if [[ "$web_choices" == "0" ]]; then
+    continue
+elif [[ "$web_choices" == "9" ]]; then
+    print_info "Exiting... / Đang thoát..."
+    exit 0
+fi
 
 # Mobile development tools selection
 print_section "Mobile Development Tools Selection / Lựa chọn công cụ phát triển mobile"
@@ -373,7 +444,17 @@ echo "2. ${DEV_ICON} Flutter"
 echo "3. ${DEV_ICON} Expo"
 echo "4. ${DEV_ICON} Firebase"
 echo "5. ${DEV_ICON} Ionic"
-read -p "$(print_question "Enter your choices (comma-separated) / Nhập lựa chọn (phân cách bằng dấu phẩy): ")" mobile_choices
+echo "0. ${ERROR_ICON} Back / Quay lại"
+echo "9. ${ERROR_ICON} Exit / Thoát"
+read -p "$(print_question "Enter your choices (comma-separated, 0 to go back, 9 to exit) / Nhập lựa chọn (phân cách bằng dấu phẩy, 0 để quay lại, 9 để thoát): ")" mobile_choices
+
+# Handle navigation options
+if [[ "$mobile_choices" == "0" ]]; then
+    continue
+elif [[ "$mobile_choices" == "9" ]]; then
+    print_info "Exiting... / Đang thoát..."
+    exit 0
+fi
 
 print_success "Setup completed! / Cài đặt hoàn tất!"
 print_warning "Please restart your terminal to apply changes. / Vui lòng khởi động lại terminal để áp dụng các thay đổi."
