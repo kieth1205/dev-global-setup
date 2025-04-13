@@ -57,7 +57,44 @@ Dự án này cung cấp một cách đơn giản để thiết lập môi trư�
 - Bash shell
 - Quyền sudo/administrator
 
-### Cài đặt
+### Cài đặt nhanh
+
+#### Windows (PowerShell)
+
+```powershell
+# Sử dụng Invoke-WebRequest (irm)
+irm https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/windows_irm.ps1 | iex
+
+# Hoặc tải về và chạy
+curl -o setup.ps1 https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/windows_irm.ps1
+.\setup.ps1
+```
+
+#### macOS
+
+```bash
+# Sử dụng curl
+curl -sSL https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/macos_curl.sh | bash
+
+# Hoặc tải về và chạy
+curl -o setup.sh https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/macos_curl.sh
+chmod +x setup.sh
+./setup.sh
+```
+
+#### Linux
+
+```bash
+# Sử dụng curl
+curl -sSL https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/linux_curl.sh | bash
+
+# Hoặc tải về và chạy
+curl -o setup.sh https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/linux_curl.sh
+chmod +x setup.sh
+./setup.sh
+```
+
+### Cài đặt thủ công
 
 ```bash
 # Clone repository
@@ -186,7 +223,44 @@ This project provides a simple way to set up a development environment on differ
 - Bash shell
 - Sudo/administrator privileges
 
-### Installation
+### Quick Installation
+
+#### Windows (PowerShell)
+
+```powershell
+# Using Invoke-WebRequest (irm)
+irm https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/windows_irm.ps1 | iex
+
+# Or download and run
+curl -o setup.ps1 https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/windows_irm.ps1
+.\setup.ps1
+```
+
+#### macOS
+
+```bash
+# Using curl
+curl -sSL https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/macos_curl.sh | bash
+
+# Or download and run
+curl -o setup.sh https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/macos_curl.sh
+chmod +x setup.sh
+./setup.sh
+```
+
+#### Linux
+
+```bash
+# Using curl
+curl -sSL https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/linux_curl.sh | bash
+
+# Or download and run
+curl -o setup.sh https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/linux_curl.sh
+chmod +x setup.sh
+./setup.sh
+```
+
+### Manual Installation
 
 ```bash
 # Clone repository
@@ -250,59 +324,6 @@ cat ~/.config/dev-setup/logs/setup_*.log
 ./scripts/security_check.sh
 ```
 
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-## Reporting Issues
-
-Please use [GitHub Issues](https://github.com/kieth1205/dev-global-setup/issues) to report issues.
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-## Quick Start
-
-### Windows (PowerShell)
-
-```powershell
-# Using Invoke-WebRequest (irm)
-irm https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/windows_irm.ps1 | iex
-
-# Or download and run
-curl -o setup.ps1 https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/windows_irm.ps1
-.\setup.ps1
-```
-
-### macOS
-
-```bash
-# Using curl
-curl -sSL https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/macos_curl.sh | bash
-
-# Or download and run
-curl -o setup.sh https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/macos_curl.sh
-chmod +x setup.sh
-./setup.sh
-```
-
-### Linux
-
-```bash
-# Using curl
-curl -sSL https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/linux_curl.sh | bash
-
-# Or download and run
-curl -o setup.sh https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/linux_curl.sh
-chmod +x setup.sh
-./setup.sh
-```
-
 ## Development
 
 ### Branch Strategy
@@ -326,3 +347,19 @@ The project uses GitHub Actions for continuous integration and deployment:
 
 - Production: `YYYY.MM.DD.HHMM` (e.g., 2024.03.15.1430)
 - Release Candidate: `YYYY.MM.DD.HHMM-rc` (e.g., 2024.03.15.1430-rc)
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## Reporting Issues
+
+Please use [GitHub Issues](https://github.com/kieth1205/dev-global-setup/issues) to report issues.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
