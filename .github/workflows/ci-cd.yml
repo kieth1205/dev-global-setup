@@ -129,11 +129,19 @@ jobs:
           echo "Total size: $TOTAL_SIZE"
           echo "has_files=true" >> $GITHUB_OUTPUT
 
+      - name: Prepare Artifacts
+        if: steps.verify_build.outputs.has_files == 'true'
+        run: |
+          echo "Preparing artifacts for upload..."
+          echo "Artifact contents:"
+          find dist -type f -exec ls -la {} \;
+          echo "Total artifact size: $(du -sh dist | cut -f1)"
+
       - name: Upload build artifacts
         if: steps.verify_build.outputs.has_files == 'true'
         uses: actions/upload-artifact@v3
         with:
-          name: build
+          name: build-artifacts
           path: dist/
           retention-days: 5
           if-no-files-found: warn
