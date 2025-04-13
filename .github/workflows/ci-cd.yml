@@ -7,6 +7,12 @@ on:
     branches: [main, debug, "build-release"]
   workflow_dispatch: # Cho phép chạy thủ công
 
+# Thêm permissions cho actions
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -29,15 +35,22 @@ jobs:
         run: npm test
 
       - name: Check scripts
+        shell: bash
         run: |
-          if [ "${{ matrix.os }}" == "ubuntu-latest" ]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" ]]; then
             chmod +x scripts/linux_curl.sh
             ./scripts/linux_curl.sh --test
-          elif [ "${{ matrix.os }}" == "macos-latest" ]; then
+          elif [[ "${{ matrix.os }}" == "macos-latest" ]]; then
             chmod +x scripts/macos_curl.sh
             ./scripts/macos_curl.sh --test
           else
-            pwsh -Command ".\scripts\windows_irm.ps1 -Test"
+            # Windows specific commands
+            if [[ -f "scripts/windows_irm.ps1" ]]; then
+              pwsh -Command ".\scripts\windows_irm.ps1 -Test"
+            else
+              echo "Error: Windows script not found"
+              exit 1
+            fi
           fi
 
   build:
@@ -52,17 +65,121 @@ jobs:
         with:
           node-version: "18"
 
+      - name: Clean Build Directory
+        run: |
+          if [ -d "dist" ]; then
+            echo "Cleaning existing dist directory..."
+            rm -rf dist
+          fi
+          mkdir -p dist
+          echo "Created fresh dist directory"
+
       - name: Install dependencies
         run: npm install
 
       - name: Build
-        run: npm run build
+        run: |
+          echo "Starting build process..."
+          npm run build --verbose
+          BUILD_EXIT_CODE=$?
+
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "Build failed with exit code: $BUILD_EXIT_CODE"
+            exit 1
+          fi
+
+          echo "Build completed successfully"
+
+      - name: Debug Build Output
+        run: |
+          echo "Debugging build output..."
+          echo "Current working directory: $(pwd)"
+          echo "Contents of root directory:"
+          ls -la
+          echo "Contents of dist directory:"
+          ls -la dist/
+          echo "File sizes in dist:"
+          du -sh dist/* 2>/dev/null || true
+
+      - name: Verify Build Output
+        id: verify_build
+        run: |
+          echo "Verifying build output..."
+
+          # Check if dist directory exists
+          if [ ! -d "dist" ]; then
+            echo "Error: Build output directory (dist/) does not exist"
+            echo "has_files=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Check if dist directory is empty
+          if [ -z "$(ls -A dist)" ]; then
+            echo "Error: Build output directory (dist/) is empty"
+            echo "has_files=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+          # Count files and calculate total size
+          FILE_COUNT=$(find dist -type f | wc -l)
+          TOTAL_SIZE=$(du -sh dist | cut -f1)
+
+          echo "Build output verified successfully"
+          echo "Total files: $FILE_COUNT"
+          echo "Total size: $TOTAL_SIZE"
+          echo "has_files=true" >> $GITHUB_OUTPUT
+
+      - name: Prepare Artifacts
+        if: steps.verify_build.outputs.has_files == 'true'
+        run: |
+          echo "Preparing artifacts for upload..."
+          echo "Artifact contents:"
+          find dist -type f -exec ls -la {} \;
+          echo "Total artifact size: $(du -sh dist | cut -f1)"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v3
+        if: steps.verify_build.outputs.has_files == 'true'
+        uses: actions/upload-artifact@v4
         with:
-          name: build
+          name: build-artifacts
           path: dist/
+          retention-days: 5
+          if-no-files-found: warn
+          compression-level: 9
+
+      - name: Notify Telegram on Build Success
+        if: success()
+        run: |
+          MESSAGE="✅ *Build Completed Successfully*
+
+          🔄 Build: #${{ github.run_number }}
+          👤 Triggered by: ${{ github.actor }}
+          🌿 Branch: ${GITHUB_REF#refs/heads/}
+
+          🔗 [View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true"
+
+      - name: Notify Telegram on Build Failure
+        if: failure()
+        run: |
+          MESSAGE="❌ *Build Failed*
+
+          🔄 Build: #${{ github.run_number }}
+          👤 Triggered by: ${{ github.actor }}
+          🌿 Branch: ${GITHUB_REF#refs/heads/}
+
+          🔗 [View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true"
 
   deploy:
     needs: build
@@ -73,9 +190,9 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Download build artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
-          name: build
+          name: build-artifacts
           path: dist/
 
       - name: Generate Version
@@ -142,3 +259,39 @@ jobs:
           generate_release_notes: true
           draft: ${{ github.ref == 'refs/heads/build-release' }}
           prerelease: ${{ github.ref == 'refs/heads/build-release' }}
+
+      - name: Notify Telegram on Deploy Success
+        if: success()
+        run: |
+          MESSAGE="🚀 *Deployment Completed Successfully*
+
+          🔖 Version: v${{ steps.version.outputs.version }}
+          🌿 Branch: ${{ steps.version.outputs.branch }}
+          🔄 Build: #${{ github.run_number }}
+          👤 Triggered by: ${{ github.actor }}
+
+          🔗 [View Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }})
+          🔗 [View Deployment](https://github.com/${{ github.repository }}/deployments)"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true"
+
+      - name: Notify Telegram on Deploy Failure
+        if: failure()
+        run: |
+          MESSAGE="❌ *Deployment Failed*
+
+          🌿 Branch: ${GITHUB_REF#refs/heads/}
+          🔄 Build: #${{ github.run_number }}
+          👤 Triggered by: ${{ github.actor }}
+
+          🔗 [View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true"
