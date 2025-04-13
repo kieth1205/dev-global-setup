@@ -28,8 +28,23 @@ get_repo_info() {
     fi
 }
 
+# Function to get commit SHA
+get_commit_sha() {
+    if [ -n "$GITHUB_SHA" ]; then
+        echo "$GITHUB_SHA"
+    else
+        # Try to get commit SHA from git if available
+        if command -v git &> /dev/null; then
+            git rev-parse HEAD
+        else
+            echo "main"  # fallback to main branch
+        fi
+    fi
+}
+
 REPO=$(get_repo_info)
-INSTALLER_URL="https://raw.githubusercontent.com/$REPO/main/src/installers/linux_installer.sh"
+COMMIT_SHA=$(get_commit_sha)
+INSTALLER_URL="https://raw.githubusercontent.com/$REPO/$COMMIT_SHA/src/installers/linux_installer.sh"
 
 # Function to check if URL exists
 check_url() {
@@ -40,6 +55,7 @@ check_url() {
         return 0
     else
         echo "Error: URL returned HTTP code $response_code"
+        echo "Attempted URL: $url"
         return 1
     fi
 }
@@ -47,12 +63,20 @@ check_url() {
 # Check if running in CI environment
 if [ "$CI" == "true" ]; then
     echo "Running in CI environment, skipping root check"
+    echo "Repository: $REPO"
+    echo "Commit SHA: $COMMIT_SHA"
     echo "Checking installer URL: $INSTALLER_URL"
     
     # First check if the URL exists
     if ! check_url "$INSTALLER_URL"; then
         echo "Error: Installer script not found at the specified URL"
-        exit 1
+        echo "Trying alternative URL with main branch..."
+        # Try with main branch as fallback
+        INSTALLER_URL="https://raw.githubusercontent.com/$REPO/main/src/installers/linux_installer.sh"
+        if ! check_url "$INSTALLER_URL"; then
+            echo "Error: Installer script not found at alternative URL either"
+            exit 1
+        fi
     fi
     
     # Download the script
@@ -84,12 +108,20 @@ else
         exit 1
     fi
     
+    echo "Repository: $REPO"
+    echo "Commit SHA: $COMMIT_SHA"
     echo "Checking installer URL: $INSTALLER_URL"
     
     # First check if the URL exists
     if ! check_url "$INSTALLER_URL"; then
         echo "Error: Installer script not found at the specified URL"
-        exit 1
+        echo "Trying alternative URL with main branch..."
+        # Try with main branch as fallback
+        INSTALLER_URL="https://raw.githubusercontent.com/$REPO/main/src/installers/linux_installer.sh"
+        if ! check_url "$INSTALLER_URL"; then
+            echo "Error: Installer script not found at alternative URL either"
+            exit 1
+        fi
     fi
     
     # Download the script
