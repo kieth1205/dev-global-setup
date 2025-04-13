@@ -90,18 +90,21 @@ jobs:
           echo "Build completed successfully"
 
       - name: Verify Build Output
+        id: verify_build
         run: |
           echo "Verifying build output..."
 
           # Check if dist directory exists
           if [ ! -d "dist" ]; then
             echo "Error: Build output directory (dist/) does not exist"
+            echo "has_files=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
           # Check if dist directory is empty
           if [ -z "$(ls -A dist)" ]; then
             echo "Error: Build output directory (dist/) is empty"
+            echo "has_files=false" >> $GITHUB_OUTPUT
             exit 1
           fi
 
@@ -113,13 +116,20 @@ jobs:
           echo "File sizes:"
           du -sh dist/*
 
+          # Count files
+          FILE_COUNT=$(find dist -type f | wc -l)
+          echo "Total files in dist: $FILE_COUNT"
+
+          echo "has_files=true" >> $GITHUB_OUTPUT
+
       - name: Upload build artifacts
+        if: steps.verify_build.outputs.has_files == 'true'
         uses: actions/upload-artifact@v3
         with:
           name: build
           path: dist/
           retention-days: 5
-          if-no-files-found: error
+          if-no-files-found: warn
           compression-level: 9
 
   deploy:
