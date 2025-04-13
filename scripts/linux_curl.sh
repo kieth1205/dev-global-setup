@@ -18,7 +18,7 @@ trap cleanup EXIT
 if [ "$CI" == "true" ]; then
     echo "Running in CI environment, skipping root check"
     # Download and execute the main setup script
-    curl -sSL "https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/src/installers/linux_installer.sh" -o "$TEMP_DIR/setup.sh"
+    curl -sSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/src/installers/linux_installer.sh" -o "$TEMP_DIR/setup.sh"
     chmod +x "$TEMP_DIR/setup.sh"
     # Execute the setup script
     "$TEMP_DIR/setup.sh"
@@ -29,7 +29,7 @@ else
         exit 1
     fi
     # Download and execute the main setup script
-    curl -sSL "https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/src/installers/linux_installer.sh" -o "$TEMP_DIR/setup.sh"
+    curl -sSL "https://raw.githubusercontent.com/$GITHUB_REPOSITORY/main/src/installers/linux_installer.sh" -o "$TEMP_DIR/setup.sh"
     chmod +x "$TEMP_DIR/setup.sh"
     # Execute the setup script
     "$TEMP_DIR/setup.sh"
