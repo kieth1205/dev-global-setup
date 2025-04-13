@@ -7,6 +7,12 @@ on:
     branches: [main, debug, "build-release"]
   workflow_dispatch: # Cho phép chạy thủ công
 
+# Thêm permissions cho actions
+permissions:
+  contents: write
+  packages: write
+  actions: write
+
 jobs:
   test:
     runs-on: ${{ matrix.os }}
@@ -63,6 +69,7 @@ jobs:
         with:
           name: build
           path: dist/
+          retention-days: 5
 
   deploy:
     needs: build
