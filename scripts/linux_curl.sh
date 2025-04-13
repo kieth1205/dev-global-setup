@@ -31,17 +31,51 @@ get_repo_info() {
 REPO=$(get_repo_info)
 INSTALLER_URL="https://raw.githubusercontent.com/$REPO/main/src/installers/linux_installer.sh"
 
+# Function to check if URL exists
+check_url() {
+    local url=$1
+    local response_code
+    response_code=$(curl -sL -w "%{http_code}" "$url" -o /dev/null)
+    if [ "$response_code" -eq 200 ]; then
+        return 0
+    else
+        echo "Error: URL returned HTTP code $response_code"
+        return 1
+    fi
+}
+
 # Check if running in CI environment
 if [ "$CI" == "true" ]; then
     echo "Running in CI environment, skipping root check"
-    echo "Downloading installer from: $INSTALLER_URL"
-    # Download and execute the main setup script
+    echo "Checking installer URL: $INSTALLER_URL"
+    
+    # First check if the URL exists
+    if ! check_url "$INSTALLER_URL"; then
+        echo "Error: Installer script not found at the specified URL"
+        exit 1
+    fi
+    
+    # Download the script
+    echo "Downloading installer..."
     if ! curl -sSL "$INSTALLER_URL" -o "$TEMP_DIR/setup.sh"; then
         echo "Error: Failed to download installer script"
         exit 1
     fi
+    
+    # Verify the downloaded file
+    if [ ! -s "$TEMP_DIR/setup.sh" ]; then
+        echo "Error: Downloaded file is empty"
+        exit 1
+    fi
+    
+    # Check if the file is a valid shell script
+    if ! head -n 1 "$TEMP_DIR/setup.sh" | grep -q "^#!.*bash"; then
+        echo "Error: Downloaded file is not a valid shell script"
+        exit 1
+    fi
+    
     chmod +x "$TEMP_DIR/setup.sh"
-    # Execute the setup script
+    echo "Executing installer..."
     "$TEMP_DIR/setup.sh"
 else
     # Check if running as root
@@ -49,13 +83,35 @@ else
         echo "Please run this script as root or with sudo"
         exit 1
     fi
-    echo "Downloading installer from: $INSTALLER_URL"
-    # Download and execute the main setup script
+    
+    echo "Checking installer URL: $INSTALLER_URL"
+    
+    # First check if the URL exists
+    if ! check_url "$INSTALLER_URL"; then
+        echo "Error: Installer script not found at the specified URL"
+        exit 1
+    fi
+    
+    # Download the script
+    echo "Downloading installer..."
     if ! curl -sSL "$INSTALLER_URL" -o "$TEMP_DIR/setup.sh"; then
         echo "Error: Failed to download installer script"
         exit 1
     fi
+    
+    # Verify the downloaded file
+    if [ ! -s "$TEMP_DIR/setup.sh" ]; then
+        echo "Error: Downloaded file is empty"
+        exit 1
+    fi
+    
+    # Check if the file is a valid shell script
+    if ! head -n 1 "$TEMP_DIR/setup.sh" | grep -q "^#!.*bash"; then
+        echo "Error: Downloaded file is not a valid shell script"
+        exit 1
+    fi
+    
     chmod +x "$TEMP_DIR/setup.sh"
-    # Execute the setup script
+    echo "Executing installer..."
     "$TEMP_DIR/setup.sh"
 fi 
