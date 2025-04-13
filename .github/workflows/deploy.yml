@@ -1,67 +1,90 @@
-name: Deploy Scripts
+name: Deploy
 
 on:
   push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+    branches: [main, "build-release"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: "Version to deploy (optional)"
+        required: false
+        type: string
 
 jobs:
-  test-scripts:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Test Linux Script
-        if: matrix.os == 'ubuntu-latest'
-        run: |
-          chmod +x scripts/linux_curl.sh
-          # Test script execution
-          if [ -f "scripts/linux_curl.sh" ]; then
-            echo "Linux script exists"
-          else
-            echo "Linux script not found"
-            exit 1
-          fi
-
-      - name: Test macOS Script
-        if: matrix.os == 'macos-latest'
-        run: |
-          chmod +x scripts/macos_curl.sh
-          # Test script execution
-          if [ -f "scripts/macos_curl.sh" ]; then
-            echo "macOS script exists"
-          else
-            echo "macOS script not found"
-            exit 1
-          fi
-
-      - name: Test Windows Script
-        if: matrix.os == 'windows-latest'
-        run: |
-          # Test script existence
-          if (Test-Path "scripts/windows_irm.ps1") {
-            Write-Host "Windows script exists"
-          } else {
-            Write-Host "Windows script not found"
-            exit 1
-          }
-
   deploy:
-    needs: test-scripts
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v3
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./scripts
-          publish_branch: gh-pages
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Get Version
+        id: get_version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Staging
+        if: github.ref == 'refs/heads/build-release' || github.event.inputs.environment == 'staging'
+        run: |
+          # Deploy to staging environment
+          echo "Deploying version ${{ steps.get_version.outputs.version }} to staging"
+          # Add your staging deployment commands here
+          # Example: scp -r dist/* user@staging-server:/path/to/deploy
+
+      - name: Deploy to Production
+        if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'production'
+        run: |
+          # Deploy to production environment
+          echo "Deploying version ${{ steps.get_version.outputs.version }} to production"
+          # Add your production deployment commands here
+          # Example: scp -r dist/* user@production-server:/path/to/deploy
+
+      - name: Create Deployment Tag
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const version = '${{ steps.get_version.outputs.version }}'
+            const environment = '${{ github.event.inputs.environment || (github.ref == "refs/heads/main" && "production" || "staging") }}'
+            const tag = `deploy-${environment}-${version}`
+
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${tag}`,
+              sha: context.sha
+            })
+
+      - name: Update Deployment Status
+        uses: bobheadxi/deployments@v1
+        if: always()
+        with:
+          step: finish
+          status: ${{ job.status }}
+          env: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+          ref: ${{ github.ref }}
+          desc: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'Production' || 'Staging') }} deployment ${{ job.status }}

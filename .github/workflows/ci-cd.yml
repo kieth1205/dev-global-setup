@@ -2,9 +2,9 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [main]
+    branches: [main, debug, "build-release"]
   pull_request:
-    branches: [main]
+    branches: [main, debug, "build-release"]
   workflow_dispatch: # Cho phép chạy thủ công
 
 jobs:
@@ -67,7 +67,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/build-release'
 
     steps:
       - uses: actions/checkout@v3
@@ -81,9 +81,18 @@ jobs:
       - name: Generate Version
         id: version
         run: |
-          # Tạo version dựa trên thời gian (YYYY.MM.DD.HHmm)
-          VERSION=$(date +'%Y.%m.%d.%H%M')
+          # Tạo version dựa trên thời gian và branch
+          BRANCH=${GITHUB_REF#refs/heads/}
+          TIMESTAMP=$(date +'%Y.%m.%d.%H%M')
+
+          if [ "$BRANCH" == "build-release" ]; then
+            VERSION="${TIMESTAMP}-rc"
+          else
+            VERSION="${TIMESTAMP}"
+          fi
+
           echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "branch=$BRANCH" >> $GITHUB_OUTPUT
 
           # Cập nhật version trong package.json
           npm version $VERSION --no-git-tag-version
@@ -124,11 +133,12 @@ jobs:
             ## Changes
             - Automated release created by GitHub Actions
             - Version: ${{ steps.version.outputs.version }}
+            - Branch: ${{ steps.version.outputs.branch }}
             - Build: ${{ github.run_number }}
             - Timestamp: ${{ steps.version.outputs.version }}
           files: |
             dist/*
             scripts/*
           generate_release_notes: true
-          draft: false
-          prerelease: false
+          draft: ${{ github.ref == 'refs/heads/build-release' }}
+          prerelease: ${{ github.ref == 'refs/heads/build-release' }}

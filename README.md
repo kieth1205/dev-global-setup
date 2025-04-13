@@ -265,3 +265,64 @@ Please use [GitHub Issues](https://github.com/kieth1205/dev-global-setup/issues)
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Quick Start
+
+### Windows (PowerShell)
+
+```powershell
+# Using Invoke-WebRequest (irm)
+irm https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/windows_irm.ps1 | iex
+
+# Or download and run
+curl -o setup.ps1 https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/windows_irm.ps1
+.\setup.ps1
+```
+
+### macOS
+
+```bash
+# Using curl
+curl -sSL https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/macos_curl.sh | bash
+
+# Or download and run
+curl -o setup.sh https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/macos_curl.sh
+chmod +x setup.sh
+./setup.sh
+```
+
+### Linux
+
+```bash
+# Using curl
+curl -sSL https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/linux_curl.sh | bash
+
+# Or download and run
+curl -o setup.sh https://raw.githubusercontent.com/kieth1205/dev-global-setup/main/scripts/linux_curl.sh
+chmod +x setup.sh
+./setup.sh
+```
+
+## Development
+
+### Branch Strategy
+
+- `main`: Production releases
+- `build-release`: Release candidates
+- `debug`: Development and testing
+
+### CI/CD Pipeline
+
+The project uses GitHub Actions for continuous integration and deployment:
+
+1. **Test**: Runs on all supported operating systems
+2. **Build**: Creates distributable artifacts
+3. **Deploy**:
+   - Deploys to GitHub Pages
+   - Creates releases and tags
+   - Version format: YYYY.MM.DD.HHMM
+
+### Versioning
+
+- Production: `YYYY.MM.DD.HHMM` (e.g., 2024.03.15.1430)
+- Release Candidate: `YYYY.MM.DD.HHMM-rc` (e.g., 2024.03.15.1430-rc)
