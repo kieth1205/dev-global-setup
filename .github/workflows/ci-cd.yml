@@ -147,6 +147,40 @@ jobs:
           if-no-files-found: warn
           compression-level: 9
 
+      - name: Notify Telegram on Build Success
+        if: success()
+        run: |
+          MESSAGE="✅ *Build Completed Successfully*
+
+          🔄 Build: #${{ github.run_number }}
+          👤 Triggered by: ${{ github.actor }}
+          🌿 Branch: ${GITHUB_REF#refs/heads/}
+
+          🔗 [View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true"
+
+      - name: Notify Telegram on Build Failure
+        if: failure()
+        run: |
+          MESSAGE="❌ *Build Failed*
+
+          🔄 Build: #${{ github.run_number }}
+          👤 Triggered by: ${{ github.actor }}
+          🌿 Branch: ${GITHUB_REF#refs/heads/}
+
+          🔗 [View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true"
+
   deploy:
     needs: build
     runs-on: ubuntu-latest
@@ -226,11 +260,10 @@ jobs:
           draft: ${{ github.ref == 'refs/heads/build-release' }}
           prerelease: ${{ github.ref == 'refs/heads/build-release' }}
 
-      - name: Notify Telegram on Success
+      - name: Notify Telegram on Deploy Success
         if: success()
         run: |
-          # Tạo message thông báo
-          MESSAGE="✅ *CI/CD Pipeline Completed Successfully*
+          MESSAGE="🚀 *Deployment Completed Successfully*
 
           🔖 Version: v${{ steps.version.outputs.version }}
           🌿 Branch: ${{ steps.version.outputs.branch }}
@@ -246,10 +279,10 @@ jobs:
             -d "parse_mode=Markdown" \
             -d "disable_web_page_preview=true"
 
-      - name: Notify Telegram on Failure
+      - name: Notify Telegram on Deploy Failure
         if: failure()
         run: |
-          MESSAGE="❌ *CI/CD Pipeline Failed*
+          MESSAGE="❌ *Deployment Failed*
 
           🌿 Branch: ${GITHUB_REF#refs/heads/}
           🔄 Build: #${{ github.run_number }}
