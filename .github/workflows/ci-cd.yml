@@ -149,3 +149,40 @@ jobs:
           generate_release_notes: true
           draft: ${{ github.ref == 'refs/heads/build-release' }}
           prerelease: ${{ github.ref == 'refs/heads/build-release' }}
+
+      - name: Notify Telegram on Success
+        if: success()
+        run: |
+          # Tạo message thông báo
+          MESSAGE="✅ *CI/CD Pipeline Completed Successfully*
+
+          🔖 Version: v${{ steps.version.outputs.version }}
+          🌿 Branch: ${{ steps.version.outputs.branch }}
+          🔄 Build: #${{ github.run_number }}
+          👤 Triggered by: ${{ github.actor }}
+
+          🔗 [View Release](https://github.com/${{ github.repository }}/releases/tag/v${{ steps.version.outputs.version }})
+          🔗 [View Deployment](https://github.com/${{ github.repository }}/deployments)"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true"
+
+      - name: Notify Telegram on Failure
+        if: failure()
+        run: |
+          MESSAGE="❌ *CI/CD Pipeline Failed*
+
+          🌿 Branch: ${GITHUB_REF#refs/heads/}
+          🔄 Build: #${{ github.run_number }}
+          👤 Triggered by: ${{ github.actor }}
+
+          🔗 [View Workflow Run](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})"
+
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -d "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d "text=${MESSAGE}" \
+            -d "parse_mode=Markdown" \
+            -d "disable_web_page_preview=true"
