@@ -80,9 +80,19 @@ jobs:
       - name: Build
         run: |
           echo "Starting build process..."
-          npm run build --verbose
-          BUILD_EXIT_CODE=$?
+          # Create dist directory if it doesn't exist
+          mkdir -p dist
 
+          # Copy all necessary files to dist
+          echo "Copying files to dist directory..."
+          cp -r scripts/* dist/
+          cp -r src/* dist/
+
+          # Verify files were copied
+          echo "Verifying copied files..."
+          ls -la dist/
+
+          BUILD_EXIT_CODE=$?
           if [ $BUILD_EXIT_CODE -ne 0 ]; then
             echo "Build failed with exit code: $BUILD_EXIT_CODE"
             exit 1
@@ -255,7 +265,6 @@ jobs:
             - Timestamp: ${{ steps.version.outputs.version }}
           files: |
             dist/*
-            scripts/*
           generate_release_notes: true
           draft: ${{ github.ref == 'refs/heads/build-release' }}
           prerelease: ${{ github.ref == 'refs/heads/build-release' }}
