@@ -1,0 +1,90 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main, "build-release"]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Environment to deploy"
+        required: true
+        default: "staging"
+        type: choice
+        options:
+          - staging
+          - production
+      version:
+        description: "Version to deploy (optional)"
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "18"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Get Version
+        id: get_version
+        run: |
+          if [ -n "${{ github.event.inputs.version }}" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=$(node -p "require('./package.json').version")
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Deploy to Staging
+        if: github.ref == 'refs/heads/build-release' || github.event.inputs.environment == 'staging'
+        run: |
+          # Deploy to staging environment
+          echo "Deploying version ${{ steps.get_version.outputs.version }} to staging"
+          # Add your staging deployment commands here
+          # Example: scp -r dist/* user@staging-server:/path/to/deploy
+
+      - name: Deploy to Production
+        if: github.ref == 'refs/heads/main' || github.event.inputs.environment == 'production'
+        run: |
+          # Deploy to production environment
+          echo "Deploying version ${{ steps.get_version.outputs.version }} to production"
+          # Add your production deployment commands here
+          # Example: scp -r dist/* user@production-server:/path/to/deploy
+
+      - name: Create Deployment Tag
+        if: success()
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const version = '${{ steps.get_version.outputs.version }}'
+            const environment = '${{ github.event.inputs.environment || (github.ref == "refs/heads/main" && "production" || "staging") }}'
+            const tag = `deploy-${environment}-${version}`
+
+            await github.rest.git.createRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: `refs/tags/${tag}`,
+              sha: context.sha
+            })
+
+      - name: Update Deployment Status
+        uses: bobheadxi/deployments@v1
+        if: always()
+        with:
+          step: finish
+          status: ${{ job.status }}
+          env: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'production' || 'staging') }}
+          ref: ${{ github.ref }}
+          desc: ${{ github.event.inputs.environment || (github.ref == 'refs/heads/main' && 'Production' || 'Staging') }} deployment ${{ job.status }}

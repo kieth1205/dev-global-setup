@@ -1,0 +1,27 @@
+{
+  "name": "dev-global-setup",
+  "version": "1.0.0",
+  "description": "Global development environment setup script",
+  "main": "index.js",
+  "scripts": {
+    "test": "node test/test.js",
+    "build": "echo \"Building...\" && mkdir -p dist && cp -r scripts/* dist/",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kieth1205/dev-global-setup.git"
+  },
+  "keywords": [
+    "development",
+    "setup",
+    "environment",
+    "automation"
+  ],
+  "author": "kieth1205",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/kieth1205/dev-global-setup/issues"
+  },
+  "homepage": "https://github.com/kieth1205/dev-global-setup#readme"
+}

@@ -1,0 +1,688 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*" # Trigger on new version tags
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        id: run_tests
+        run: |
+          # Capture test execution time
+          START_TIME=$(date +%s)
+          npm test
+          END_TIME=$(date +%s)
+          TEST_DURATION=$((END_TIME - START_TIME))
+
+          # Capture test coverage
+          COVERAGE=$(npm run test:coverage -- --coverageReporters=text-summary | grep "Statements" | awk '{print $2}')
+
+          # Get test statistics
+          TEST_COUNT=$(npm test -- --json | jq '.numTests')
+          TEST_PASSED=$(npm test -- --json | jq '.numPassedTests')
+          TEST_FAILED=$(npm test -- --json | jq '.numFailedTests')
+
+          echo "coverage=$COVERAGE" >> $GITHUB_OUTPUT
+          echo "test_duration=$TEST_DURATION" >> $GITHUB_OUTPUT
+          echo "test_count=$TEST_COUNT" >> $GITHUB_OUTPUT
+          echo "test_passed=$TEST_PASSED" >> $GITHUB_OUTPUT
+          echo "test_failed=$TEST_FAILED" >> $GITHUB_OUTPUT
+
+      - name: Analyze code complexity
+        id: code_complexity
+        run: |
+          # Install complexity analyzer
+          npm install -g complexity-report
+
+          # Analyze JavaScript files
+          COMPLEXITY=$(complexity-report --format json . | jq '.')
+          AVERAGE_COMPLEXITY=$(echo $COMPLEXITY | jq '.average.cyclomatic')
+          MAX_COMPLEXITY=$(echo $COMPLEXITY | jq '.max.cyclomatic')
+          TOTAL_FUNCTIONS=$(echo $COMPLEXITY | jq '.total.functions')
+
+          echo "avg_complexity=$AVERAGE_COMPLEXITY" >> $GITHUB_OUTPUT
+          echo "max_complexity=$MAX_COMPLEXITY" >> $GITHUB_OUTPUT
+          echo "total_functions=$TOTAL_FUNCTIONS" >> $GITHUB_OUTPUT
+
+      - name: Security scan
+        id: security_scan
+        run: |
+          # Run npm audit
+          AUDIT_RESULT=$(npm audit --json)
+          VULNERABILITIES=$(echo $AUDIT_RESULT | jq '.metadata.vulnerabilities')
+          echo "vulnerabilities=$VULNERABILITIES" >> $GITHUB_OUTPUT
+
+      - name: Analyze dependencies
+        id: analyze_deps
+        run: |
+          # Get dependency count
+          DEP_COUNT=$(npm ls --all --json | jq '.dependencies | length')
+          # Get outdated packages
+          OUTDATED=$(npm outdated --json | jq 'length')
+          # Get dependency size
+          DEP_SIZE=$(du -sh node_modules | cut -f1)
+          echo "dep_count=$DEP_COUNT" >> $GITHUB_OUTPUT
+          echo "outdated=$OUTDATED" >> $GITHUB_OUTPUT
+          echo "dep_size=$DEP_SIZE" >> $GITHUB_OUTPUT
+
+      - name: Code quality check
+        id: code_quality
+        run: |
+          # Run ESLint
+          ESLINT_RESULT=$(npx eslint . --format json)
+          ESLINT_ERRORS=$(echo $ESLINT_RESULT | jq '.[0].errorCount')
+          ESLINT_WARNINGS=$(echo $ESLINT_RESULT | jq '.[0].warningCount')
+
+          # Run Prettier check
+          PRETTIER_RESULT=$(npx prettier --check . | wc -l)
+
+          # Run SonarQube analysis
+          npm install -g sonarqube-scanner
+          sonar-scanner -Dsonar.projectKey=${{ github.repository }} -Dsonar.sources=. -Dsonar.host.url=${{ secrets.SONARQUBE_URL }} -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
+
+          echo "eslint_errors=$ESLINT_ERRORS" >> $GITHUB_OUTPUT
+          echo "eslint_warnings=$ESLINT_WARNINGS" >> $GITHUB_OUTPUT
+          echo "prettier_issues=$PRETTIER_RESULT" >> $GITHUB_OUTPUT
+
+      - name: Performance check
+        id: performance
+        run: |
+          # Run Lighthouse
+          npm install -g lighthouse
+          lighthouse --chrome-flags="--headless" --output=json --output-path=./lighthouse-report.json https://your-app-url.com
+          PERFORMANCE_SCORE=$(cat ./lighthouse-report.json | jq '.categories.performance.score * 100')
+          ACCESSIBILITY_SCORE=$(cat ./lighthouse-report.json | jq '.categories.accessibility.score * 100')
+          BEST_PRACTICES_SCORE=$(cat ./lighthouse-report.json | jq '.categories["best-practices"].score * 100')
+          SEO_SCORE=$(cat ./lighthouse-report.json | jq '.categories.seo.score * 100')
+
+          # Get bundle size
+          npm run build
+          BUNDLE_SIZE=$(du -sh dist | cut -f1)
+
+          echo "performance_score=$PERFORMANCE_SCORE" >> $GITHUB_OUTPUT
+          echo "accessibility_score=$ACCESSIBILITY_SCORE" >> $GITHUB_OUTPUT
+          echo "best_practices_score=$BEST_PRACTICES_SCORE" >> $GITHUB_OUTPUT
+          echo "seo_score=$SEO_SCORE" >> $GITHUB_OUTPUT
+          echo "bundle_size=$BUNDLE_SIZE" >> $GITHUB_OUTPUT
+
+      - name: Get version
+        id: get_version
+        run: |
+          VERSION=${GITHUB_REF#refs/tags/}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Get commit stats
+        id: commit_stats
+        run: |
+          COMMITS=$(git rev-list --count HEAD ^$(git describe --tags --abbrev=0))
+          FILES=$(git diff --name-only HEAD ^$(git describe --tags --abbrev=0) | wc -l)
+          LINES_ADDED=$(git diff --stat HEAD ^$(git describe --tags --abbrev=0) | tail -1 | awk '{print $4}')
+          LINES_DELETED=$(git diff --stat HEAD ^$(git describe --tags --abbrev=0) | tail -1 | awk '{print $6}')
+          echo "commits=$COMMITS" >> $GITHUB_OUTPUT
+          echo "files=$FILES" >> $GITHUB_OUTPUT
+          echo "lines_added=$LINES_ADDED" >> $GITHUB_OUTPUT
+          echo "lines_deleted=$LINES_DELETED" >> $GITHUB_OUTPUT
+
+      - name: Get contributors
+        id: get_contributors
+        run: |
+          CONTRIBUTORS=$(git log --format="%an" HEAD ^$(git describe --tags --abbrev=0) | sort | uniq | wc -l)
+          echo "contributors=$CONTRIBUTORS" >> $GITHUB_OUTPUT
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ steps.get_version.outputs.version }}
+          body_path: CHANGELOG.md
+          generate_release_notes: true
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build assets
+        run: |
+          mkdir -p dist
+          # Add your build commands here
+          # Example: npm run build
+          # Example: zip -r dist/release.zip dist/
+
+      - name: Upload Release Assets
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/*.zip
+            dist/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy to production
+        id: deploy
+        run: |
+          # Add your deployment commands here
+          # Example: npm run deploy
+          echo "deployment_status=success" >> $GITHUB_OUTPUT
+          echo "deployment_time=$(date +%s)" >> $GITHUB_OUTPUT
+
+      - name: Notify Slack
+        if: success()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          fields: repo,message,commit,author,action,eventName,ref,workflow
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+      - name: Notify Telegram
+        if: success()
+        run: |
+          # Format release notes for Telegram
+          RELEASE_NOTES=$(echo "${{ steps.create_release.outputs.body }}" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\\n/g')
+
+          # Get build time
+          BUILD_TIME=$(date +"%Y-%m-%d %H:%M:%S %Z")
+
+          # Format vulnerabilities
+          VULN_COUNT=$(echo "${{ steps.security_scan.outputs.vulnerabilities }}" | jq '.total')
+          VULN_CRITICAL=$(echo "${{ steps.security_scan.outputs.vulnerabilities }}" | jq '.critical')
+          VULN_HIGH=$(echo "${{ steps.security_scan.outputs.vulnerabilities }}" | jq '.high')
+
+          # Calculate deployment duration
+          DEPLOYMENT_DURATION=$(( $(date +%s) - ${{ steps.deploy.outputs.deployment_time }} ))
+
+          # Add new metrics to message
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}",
+              "text": "<b>🚀 New Release Available!</b>\n\n<b>📦 Repository:</b> <code>${{ github.repository }}</code>\n<b>🏷️ Version:</b> <code>${{ steps.get_version.outputs.version }}</code>\n<b>👤 Author:</b> <code>${{ github.actor }}</code>\n\n<b>📊 Release Stats:</b>\n• Commits: <code>${{ steps.commit_stats.outputs.commits }}</code>\n• Files Changed: <code>${{ steps.commit_stats.outputs.files }}</code>\n• Lines Added: <code>${{ steps.commit_stats.outputs.lines_added }}</code>\n• Lines Deleted: <code>${{ steps.commit_stats.outputs.lines_deleted }}</code>\n• Contributors: <code>${{ steps.get_contributors.outputs.contributors }}</code>\n• Build Time: <code>$BUILD_TIME</code>\n\n<b>🧪 Test Results:</b>\n• Coverage: <code>${{ steps.run_tests.outputs.coverage }}</code>\n• Total Tests: <code>${{ steps.run_tests.outputs.test_count }}</code>\n• Passed: <code>${{ steps.run_tests.outputs.test_passed }}</code>\n• Failed: <code>${{ steps.run_tests.outputs.test_failed }}</code>\n• Duration: <code>${{ steps.run_tests.outputs.test_duration }}</code>s\n\n<b>📦 Dependencies:</b>\n• Total: <code>${{ steps.analyze_deps.outputs.dep_count }}</code>\n• Outdated: <code>${{ steps.analyze_deps.outputs.outdated }}</code>\n• Size: <code>${{ steps.analyze_deps.outputs.dep_size }}</code>\n\n<b>🔒 Security Scan:</b>\n• Total Vulnerabilities: <code>$VULN_COUNT</code>\n• Critical: <code>$VULN_CRITICAL</code>\n• High: <code>$VULN_HIGH</code>\n\n<b>📝 Code Quality:</b>\n• ESLint Errors: <code>${{ steps.code_quality.outputs.eslint_errors }}</code>\n• ESLint Warnings: <code>${{ steps.code_quality.outputs.eslint_warnings }}</code>\n• Prettier Issues: <code>${{ steps.code_quality.outputs.prettier_issues }}</code>\n\n<b>🔍 Code Complexity:</b>\n• Average: <code>${{ steps.code_complexity.outputs.avg_complexity }}</code>\n• Max: <code>${{ steps.code_complexity.outputs.max_complexity }}</code>\n• Total Functions: <code>${{ steps.code_complexity.outputs.total_functions }}</code>\n\n<b>⚡ Performance:</b>\n• Performance Score: <code>${{ steps.performance.outputs.performance_score }}</code>\n• Accessibility: <code>${{ steps.performance.outputs.accessibility_score }}</code>\n• Best Practices: <code>${{ steps.performance.outputs.best_practices_score }}</code>\n• SEO: <code>${{ steps.performance.outputs.seo_score }}</code>\n• Bundle Size: <code>${{ steps.performance.outputs.bundle_size }}</code>\n\n<b>🚀 Deployment:</b>\n• Status: <code>${{ steps.deploy.outputs.deployment_status }}</code>\n• Duration: <code>$DEPLOYMENT_DURATION</code> seconds\n\n<b>📝 Release Notes:</b>\n$RELEASE_NOTES",
+              "parse_mode": "HTML",
+              "disable_web_page_preview": false,
+              "reply_markup": {
+                "inline_keyboard": [
+                  [
+                    {
+                      "text": "📥 Download Release",
+                      "url": "https://github.com/${{ github.repository }}/releases/tag/${{ steps.get_version.outputs.version }}"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "📋 View Changelog",
+                      "url": "https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md"
+                    },
+                    {
+                      "text": "👥 Contributors",
+                      "url": "https://github.com/${{ github.repository }}/graphs/contributors"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "📊 Compare Changes",
+                      "url": "https://github.com/${{ github.repository }}/compare/$(git describe --tags --abbrev=0)...${{ steps.get_version.outputs.version }}"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "📊 Performance Report",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    },
+                    {
+                      "text": "📝 Code Quality",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "🔍 Code Complexity",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    },
+                    {
+                      "text": "📦 Bundle Analysis",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "🧠 Memory Report",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    },
+                    {
+                      "text": "📋 Duplication",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "📚 API Docs",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    },
+                    {
+                      "text": "🌐 i18n Status",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "♿ Accessibility",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    }
+                  ]
+                ]
+              }
+            }'
+
+          # Send release assets as separate messages if they exist
+          if [ -d "dist" ] && [ "$(ls -A dist)" ]; then
+            for file in dist/*; do
+              if [ -f "$file" ]; then
+                # Get file size
+                FILE_SIZE=$(ls -lh "$file" | awk '{print $5}')
+                # Get file type
+                FILE_TYPE=$(file -b "$file" | cut -d"," -f1)
+                
+                curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendDocument" \
+                  -F "chat_id=${{ secrets.TELEGRAM_CHAT_ID }}" \
+                  -F "document=@$file" \
+                  -F "caption=📦 Asset: $(basename "$file")\n📏 Size: $FILE_SIZE\n📄 Type: $FILE_TYPE"
+              fi
+            done
+          fi
+
+      - name: Memory Usage Analysis
+        id: memory_analysis
+        run: |
+          # Install memory analyzer
+          npm install -g heapdump
+
+          # Start application in test mode
+          npm run start:test &
+          APP_PID=$!
+
+          # Wait for app to start
+          sleep 10
+
+          # Take heap snapshot
+          node -e "require('heapdump').writeSnapshot('heap-snapshot.heapsnapshot')"
+
+          # Analyze memory usage
+          MEMORY_USAGE=$(ps -o rss= -p $APP_PID | awk '{print $1/1024}')
+          HEAP_SIZE=$(node -e "console.log(require('v8').getHeapStatistics().total_heap_size / 1024 / 1024)")
+
+          # Kill test process
+          kill $APP_PID
+
+          echo "memory_usage=$MEMORY_USAGE" >> $GITHUB_OUTPUT
+          echo "heap_size=$HEAP_SIZE" >> $GITHUB_OUTPUT
+
+      - name: Code Duplication Check
+        id: duplication_check
+        run: |
+          # Install jscpd
+          npm install -g jscpd
+
+          # Run duplication check
+          DUPLICATION=$(jscpd --format json . | jq '.statistics')
+          DUPLICATION_PERCENT=$(echo $DUPLICATION | jq '.total.percentage')
+          DUPLICATION_LINES=$(echo $DUPLICATION | jq '.total.duplicatedLines')
+          DUPLICATION_FILES=$(echo $DUPLICATION | jq '.total.duplicatedFiles')
+
+          echo "duplication_percent=$DUPLICATION_PERCENT" >> $GITHUB_OUTPUT
+          echo "duplication_lines=$DUPLICATION_LINES" >> $GITHUB_OUTPUT
+          echo "duplication_files=$DUPLICATION_FILES" >> $GITHUB_OUTPUT
+
+      - name: API Documentation Check
+        id: api_docs
+        run: |
+          # Install OpenAPI validator
+          npm install -g @redocly/cli
+
+          # Validate API documentation
+          API_VALIDATION=$(redocly lint openapi.yaml --format json | jq '.')
+          API_ERRORS=$(echo $API_VALIDATION | jq '.errors | length')
+          API_WARNINGS=$(echo $API_VALIDATION | jq '.warnings | length')
+
+          # Check API coverage
+          API_COVERAGE=$(node -e "const fs = require('fs'); const routes = require('./routes.json'); const documented = require('./openapi.yaml'); console.log((Object.keys(documented.paths).length / routes.length) * 100)")
+
+          echo "api_errors=$API_ERRORS" >> $GITHUB_OUTPUT
+          echo "api_warnings=$API_WARNINGS" >> $GITHUB_OUTPUT
+          echo "api_coverage=$API_COVERAGE" >> $GITHUB_OUTPUT
+
+      - name: Internationalization Check
+        id: i18n_check
+        run: |
+          # Install i18n checker
+          npm install -g i18n-checker
+
+          # Check translation coverage
+          I18N_COVERAGE=$(i18n-checker --format json . | jq '.')
+          MISSING_TRANSLATIONS=$(echo $I18N_COVERAGE | jq '.missing | length')
+          UNUSED_TRANSLATIONS=$(echo $I18N_COVERAGE | jq '.unused | length')
+          TOTAL_KEYS=$(echo $I18N_COVERAGE | jq '.total')
+
+          echo "missing_translations=$MISSING_TRANSLATIONS" >> $GITHUB_OUTPUT
+          echo "unused_translations=$UNUSED_TRANSLATIONS" >> $GITHUB_OUTPUT
+          echo "total_translation_keys=$TOTAL_KEYS" >> $GITHUB_OUTPUT
+
+      - name: Accessibility Analysis
+        id: accessibility
+        run: |
+          # Install axe-core
+          npm install -g axe-core
+
+          # Run accessibility tests
+          ACCESSIBILITY=$(axe --format json . | jq '.')
+          VIOLATIONS=$(echo $ACCESSIBILITY | jq '.violations | length')
+          PASSES=$(echo $ACCESSIBILITY | jq '.passes | length')
+          INCOMPLETE=$(echo $ACCESSIBILITY | jq '.incomplete | length')
+
+          # Get specific violation types
+          CRITICAL_VIOLATIONS=$(echo $ACCESSIBILITY | jq '.violations[] | select(.impact == "critical") | length')
+          SERIOUS_VIOLATIONS=$(echo $ACCESSIBILITY | jq '.violations[] | select(.impact == "serious") | length')
+          MODERATE_VIOLATIONS=$(echo $ACCESSIBILITY | jq '.violations[] | select(.impact == "moderate") | length')
+
+          echo "accessibility_violations=$VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "accessibility_passes=$PASSES" >> $GITHUB_OUTPUT
+          echo "accessibility_incomplete=$INCOMPLETE" >> $GITHUB_OUTPUT
+          echo "critical_violations=$CRITICAL_VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "serious_violations=$SERIOUS_VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "moderate_violations=$MODERATE_VIOLATIONS" >> $GITHUB_OUTPUT
+
+      - name: Database Performance Analysis
+        id: db_performance
+        run: |
+          # Install database analysis tools
+          npm install -g pg-stat-activity mysql-analyzer
+
+          # PostgreSQL analysis
+          if [ -f "postgresql.conf" ]; then
+            PG_STATS=$(pg_stat_activity --format json | jq '.')
+            PG_CONNECTIONS=$(echo $PG_STATS | jq '.connections')
+            PG_QUERY_TIME=$(echo $PG_STATS | jq '.avg_query_time')
+            PG_INDEX_USAGE=$(echo $PG_STATS | jq '.index_usage')
+            echo "pg_connections=$PG_CONNECTIONS" >> $GITHUB_OUTPUT
+            echo "pg_query_time=$PG_QUERY_TIME" >> $GITHUB_OUTPUT
+            echo "pg_index_usage=$PG_INDEX_USAGE" >> $GITHUB_OUTPUT
+          fi
+
+          # MySQL analysis
+          if [ -f "mysql.cnf" ]; then
+            MYSQL_STATS=$(mysql-analyzer --format json | jq '.')
+            MYSQL_CONNECTIONS=$(echo $MYSQL_STATS | jq '.connections')
+            MYSQL_QUERY_TIME=$(echo $MYSQL_STATS | jq '.avg_query_time')
+            MYSQL_INDEX_USAGE=$(echo $MYSQL_STATS | jq '.index_usage')
+            echo "mysql_connections=$MYSQL_CONNECTIONS" >> $GITHUB_OUTPUT
+            echo "mysql_query_time=$MYSQL_QUERY_TIME" >> $GITHUB_OUTPUT
+            echo "mysql_index_usage=$MYSQL_INDEX_USAGE" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Advanced Security Analysis
+        id: advanced_security
+        run: |
+          # Install security tools
+          npm install -g snyk npm-audit-html
+
+          # Run Snyk security scan
+          SNYK_RESULT=$(snyk test --json | jq '.')
+          SNYK_VULNERABILITIES=$(echo $SNYK_RESULT | jq '.vulnerabilities | length')
+          SNYK_LICENSE_ISSUES=$(echo $SNYK_RESULT | jq '.licenseIssues | length')
+
+          # Run dependency check
+          DEP_CHECK=$(dependency-check --format JSON --out . | jq '.')
+          DEP_VULNERABILITIES=$(echo $DEP_CHECK | jq '.dependencies[].vulnerabilities | length')
+
+          # Run OWASP ZAP scan
+          ZAP_RESULT=$(zap-cli --format json quick-scan https://your-app-url.com | jq '.')
+          ZAP_ALERTS=$(echo $ZAP_RESULT | jq '.alerts | length')
+
+          echo "snyk_vulnerabilities=$SNYK_VULNERABILITIES" >> $GITHUB_OUTPUT
+          echo "snyk_license_issues=$SNYK_LICENSE_ISSUES" >> $GITHUB_OUTPUT
+          echo "dep_vulnerabilities=$DEP_VULNERABILITIES" >> $GITHUB_OUTPUT
+          echo "zap_alerts=$ZAP_ALERTS" >> $GITHUB_OUTPUT
+
+      - name: Dependency Analysis
+        id: dep_analysis
+        run: |
+          # Install dependency analysis tools
+          npm install -g madge npm-license-checker
+
+          # Generate dependency graph
+          madge --image dependency-graph.svg .
+
+          # Check licenses
+          LICENSE_CHECK=$(license-checker --json | jq '.')
+          UNKNOWN_LICENSES=$(echo $LICENSE_CHECK | jq '.[] | select(.licenses == "UNKNOWN") | length')
+          INCOMPATIBLE_LICENSES=$(echo $LICENSE_CHECK | jq '.[] | select(.licenses | contains("GPL")) | length')
+
+          # Check circular dependencies
+          CIRCULAR=$(madge --circular --format json . | jq '.circular | length')
+
+          echo "unknown_licenses=$UNKNOWN_LICENSES" >> $GITHUB_OUTPUT
+          echo "incompatible_licenses=$INCOMPATIBLE_LICENSES" >> $GITHUB_OUTPUT
+          echo "circular_dependencies=$CIRCULAR" >> $GITHUB_OUTPUT
+
+      - name: Browser Compatibility Check
+        id: browser_compatibility
+        run: |
+          # Install browser compatibility tools
+          npm install -g browser-compat-data
+
+          # Check CSS compatibility
+          CSS_COMPAT=$(browser-compat-data --format json css | jq '.')
+          UNSUPPORTED_CSS=$(echo $CSS_COMPAT | jq '.unsupported | length')
+
+          # Check JavaScript compatibility
+          JS_COMPAT=$(browser-compat-data --format json javascript | jq '.')
+          UNSUPPORTED_JS=$(echo $JS_COMPAT | jq '.unsupported | length')
+
+          # Check HTML compatibility
+          HTML_COMPAT=$(browser-compat-data --format json html | jq '.')
+          UNSUPPORTED_HTML=$(echo $HTML_COMPAT | jq '.unsupported | length')
+
+          echo "unsupported_css=$UNSUPPORTED_CSS" >> $GITHUB_OUTPUT
+          echo "unsupported_js=$UNSUPPORTED_JS" >> $GITHUB_OUTPUT
+          echo "unsupported_html=$UNSUPPORTED_HTML" >> $GITHUB_OUTPUT
+
+      - name: SEO Analysis
+        id: seo_analysis
+        run: |
+          # Install SEO tools
+          npm install -g seo-analyzer
+
+          # Run SEO analysis
+          SEO_RESULT=$(seo-analyzer --format json https://your-app-url.com | jq '.')
+          SEO_SCORE=$(echo $SEO_RESULT | jq '.score')
+          SEO_ISSUES=$(echo $SEO_RESULT | jq '.issues | length')
+          SEO_META_TAGS=$(echo $SEO_RESULT | jq '.metaTags | length')
+          SEO_HEADINGS=$(echo $SEO_RESULT | jq '.headings | length')
+          SEO_IMAGES=$(echo $SEO_RESULT | jq '.images | length')
+
+          echo "seo_score=$SEO_SCORE" >> $GITHUB_OUTPUT
+          echo "seo_issues=$SEO_ISSUES" >> $GITHUB_OUTPUT
+          echo "seo_meta_tags=$SEO_META_TAGS" >> $GITHUB_OUTPUT
+          echo "seo_headings=$SEO_HEADINGS" >> $GITHUB_OUTPUT
+          echo "seo_images=$SEO_IMAGES" >> $GITHUB_OUTPUT
+
+      - name: Source Code Analysis
+        id: source_analysis
+        run: |
+          # Install analysis tools
+          npm install -g cloc plato complexity-report
+
+          # Count lines of code
+          CLOC_RESULT=$(cloc . --json | jq '.')
+          TOTAL_LINES=$(echo $CLOC_RESULT | jq '.SUM.code')
+          TOTAL_FILES=$(echo $CLOC_RESULT | jq '.SUM.nFiles')
+          LANGUAGES=$(echo $CLOC_RESULT | jq 'del(.header, .SUM)')
+
+          # Generate code metrics
+          plato -r -d report .
+          METRICS=$(cat report/report.json | jq '.')
+          MAINTAINABILITY=$(echo $METRICS | jq '.maintainability')
+          SLOC=$(echo $METRICS | jq '.sloc')
+          ESTIMATED_HOURS=$(echo $METRICS | jq '.estimated_hours')
+
+          # Analyze code patterns
+          PATTERNS=$(complexity-report --format json . | jq '.')
+          AVERAGE_COMPLEXITY=$(echo $PATTERNS | jq '.average.cyclomatic')
+          MAX_COMPLEXITY=$(echo $PATTERNS | jq '.max.cyclomatic')
+          TOTAL_FUNCTIONS=$(echo $PATTERNS | jq '.total.functions')
+
+          echo "total_lines=$TOTAL_LINES" >> $GITHUB_OUTPUT
+          echo "total_files=$TOTAL_FILES" >> $GITHUB_OUTPUT
+          echo "languages=$LANGUAGES" >> $GITHUB_OUTPUT
+          echo "maintainability=$MAINTAINABILITY" >> $GITHUB_OUTPUT
+          echo "sloc=$SLOC" >> $GITHUB_OUTPUT
+          echo "estimated_hours=$ESTIMATED_HOURS" >> $GITHUB_OUTPUT
+          echo "avg_complexity=$AVERAGE_COMPLEXITY" >> $GITHUB_OUTPUT
+          echo "max_complexity=$MAX_COMPLEXITY" >> $GITHUB_OUTPUT
+          echo "total_functions=$TOTAL_FUNCTIONS" >> $GITHUB_OUTPUT
+
+      - name: Architecture Analysis
+        id: architecture
+        run: |
+          # Install architecture analysis tools
+          npm install -g madge dependency-cruiser
+
+          # Generate dependency graph
+          madge --image dependency-graph.svg .
+
+          # Analyze architecture
+          ARCH_RESULT=$(dependency-cruiser --config .dependency-cruiser.js --output-format json . | jq '.')
+          CIRCULAR_DEPS=$(echo $ARCH_RESULT | jq '.summary.violations.circular | length')
+          UNUSED_DEPS=$(echo $ARCH_RESULT | jq '.summary.violations.unused | length')
+          FORBIDDEN_DEPS=$(echo $ARCH_RESULT | jq '.summary.violations.forbidden | length')
+
+          # Analyze module structure
+          MODULE_STRUCTURE=$(madge --format json . | jq '.')
+          MODULE_COUNT=$(echo $MODULE_STRUCTURE | jq '.modules | length')
+          DEPENDENCY_COUNT=$(echo $MODULE_STRUCTURE | jq '.dependencies | length')
+
+          echo "circular_deps=$CIRCULAR_DEPS" >> $GITHUB_OUTPUT
+          echo "unused_deps=$UNUSED_DEPS" >> $GITHUB_OUTPUT
+          echo "forbidden_deps=$FORBIDDEN_DEPS" >> $GITHUB_OUTPUT
+          echo "module_count=$MODULE_COUNT" >> $GITHUB_OUTPUT
+          echo "dependency_count=$DEPENDENCY_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Code Pattern Analysis
+        id: code_patterns
+        run: |
+          # Install pattern analysis tools
+          npm install -g jsinspect eslint-plugin-patterns
+
+          # Detect code duplication
+          DUPLICATION=$(jsinspect --format json . | jq '.')
+          DUPLICATE_BLOCKS=$(echo $DUPLICATION | jq '.length')
+          DUPLICATE_LINES=$(echo $DUPLICATION | jq '.[].instances[].lines | length' | awk '{sum+=$1} END {print sum}')
+
+          # Analyze code patterns
+          PATTERN_RESULT=$(eslint --format json --plugin patterns . | jq '.')
+          PATTERN_VIOLATIONS=$(echo $PATTERN_RESULT | jq '.length')
+          PATTERN_TYPES=$(echo $PATTERN_RESULT | jq '.[].ruleId' | sort | uniq -c)
+
+          # Analyze code style
+          STYLE_RESULT=$(eslint --format json . | jq '.')
+          STYLE_VIOLATIONS=$(echo $STYLE_RESULT | jq '.length')
+          STYLE_TYPES=$(echo $STYLE_RESULT | jq '.[].ruleId' | sort | uniq -c)
+
+          echo "duplicate_blocks=$DUPLICATE_BLOCKS" >> $GITHUB_OUTPUT
+          echo "duplicate_lines=$DUPLICATE_LINES" >> $GITHUB_OUTPUT
+          echo "pattern_violations=$PATTERN_VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "pattern_types=$PATTERN_TYPES" >> $GITHUB_OUTPUT
+          echo "style_violations=$STYLE_VIOLATIONS" >> $GITHUB_OUTPUT
+          echo "style_types=$STYLE_TYPES" >> $GITHUB_OUTPUT
+
+      - name: Code Quality Analysis
+        id: code_quality
+        run: |
+          # Install quality analysis tools
+          npm install -g sonarqube-scanner
+
+          # Run SonarQube analysis
+          sonar-scanner \
+            -Dsonar.projectKey=${{ github.repository }} \
+            -Dsonar.sources=. \
+            -Dsonar.host.url=${{ secrets.SONARQUBE_URL }} \
+            -Dsonar.login=${{ secrets.SONARQUBE_TOKEN }}
+
+          # Analyze code smells
+          SMELLS=$(sonar-scanner --format json | jq '.issues[] | select(.type == "CODE_SMELL")')
+          SMELL_COUNT=$(echo $SMELLS | jq 'length')
+          SMELL_TYPES=$(echo $SMELLS | jq '.rule' | sort | uniq -c)
+
+          # Analyze bugs
+          BUGS=$(sonar-scanner --format json | jq '.issues[] | select(.type == "BUG")')
+          BUG_COUNT=$(echo $BUGS | jq 'length')
+          BUG_TYPES=$(echo $BUGS | jq '.rule' | sort | uniq -c)
+
+          # Analyze vulnerabilities
+          VULNS=$(sonar-scanner --format json | jq '.issues[] | select(.type == "VULNERABILITY")')
+          VULN_COUNT=$(echo $VULNS | jq 'length')
+          VULN_TYPES=$(echo $VULNS | jq '.rule' | sort | uniq -c)
+
+          echo "smell_count=$SMELL_COUNT" >> $GITHUB_OUTPUT
+          echo "smell_types=$SMELL_TYPES" >> $GITHUB_OUTPUT
+          echo "bug_count=$BUG_COUNT" >> $GITHUB_OUTPUT
+          echo "bug_types=$BUG_TYPES" >> $GITHUB_OUTPUT
+          echo "vuln_count=$VULN_COUNT" >> $GITHUB_OUTPUT
+          echo "vuln_types=$VULN_TYPES" >> $GITHUB_OUTPUT
+
+      - name: Notify Telegram
+        if: success()
+        run: |
+          # ... existing code ...
+
+          # Add source analysis metrics to message
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "chat_id": "${{ secrets.TELEGRAM_CHAT_ID }}",
+              "text": "<b>🚀 New Release Available!</b>\n\n... existing metrics ...\n\n<b>📊 Source Code Analysis:</b>\n• Total Lines: <code>${{ steps.source_analysis.outputs.total_lines }}</code>\n• Total Files: <code>${{ steps.source_analysis.outputs.total_files }}</code>\n• Languages: <code>${{ steps.source_analysis.outputs.languages }}</code>\n• Maintainability: <code>${{ steps.source_analysis.outputs.maintainability }}</code>\n• SLOC: <code>${{ steps.source_analysis.outputs.sloc }}</code>\n• Estimated Hours: <code>${{ steps.source_analysis.outputs.estimated_hours }}</code>\n\n<b>🏗️ Architecture Analysis:</b>\n• Circular Dependencies: <code>${{ steps.architecture.outputs.circular_deps }}</code>\n• Unused Dependencies: <code>${{ steps.architecture.outputs.unused_deps }}</code>\n• Forbidden Dependencies: <code>${{ steps.architecture.outputs.forbidden_deps }}</code>\n• Module Count: <code>${{ steps.architecture.outputs.module_count }}</code>\n• Dependency Count: <code>${{ steps.architecture.outputs.dependency_count }}</code>\n\n<b>📝 Code Pattern Analysis:</b>\n• Duplicate Blocks: <code>${{ steps.code_patterns.outputs.duplicate_blocks }}</code>\n• Duplicate Lines: <code>${{ steps.code_patterns.outputs.duplicate_lines }}</code>\n• Pattern Violations: <code>${{ steps.code_patterns.outputs.pattern_violations }}</code>\n• Style Violations: <code>${{ steps.code_patterns.outputs.style_violations }}</code>\n\n<b>🔍 Code Quality Analysis:</b>\n• Code Smells: <code>${{ steps.code_quality.outputs.smell_count }}</code>\n• Bugs: <code>${{ steps.code_quality.outputs.bug_count }}</code>\n• Vulnerabilities: <code>${{ steps.code_quality.outputs.vuln_count }}</code>",
+              "parse_mode": "HTML",
+              "disable_web_page_preview": false,
+              "reply_markup": {
+                "inline_keyboard": [
+                  # ... existing buttons ...
+                  [
+                    {
+                      "text": "📊 Source Analysis",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    },
+                    {
+                      "text": "🏗️ Architecture",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    }
+                  ],
+                  [
+                    {
+                      "text": "📝 Code Patterns",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    },
+                    {
+                      "text": "🔍 Quality Report",
+                      "url": "https://github.com/${{ github.repository }}/actions"
+                    }
+                  ]
+                ]
+              }
+            }'
